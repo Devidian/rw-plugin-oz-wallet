@@ -71,6 +71,17 @@ jobs:
             -Dversion=0.9.2 \
             -Dpackaging=jar
 
+      - name: Checkout OZ Tools dependency
+        uses: actions/checkout@v4
+        with:
+          repository: Devidian/rw-plugin-oz-tools
+          ref: v0.17.1
+          path: .ci/rw-plugin-oz-tools
+
+      - name: Install OZ Tools locally
+        working-directory: .ci/rw-plugin-oz-tools
+        run: mvn -B -DskipTests install
+
       - name: Check API helper
         run: ./scripts/verify-plugin-api.sh --summary
 
@@ -153,6 +164,17 @@ jobs:
             -DartifactId=PluginAPI \
             -Dversion=0.9.2 \
             -Dpackaging=jar
+
+      - name: Checkout OZ Tools dependency
+        uses: actions/checkout@v4
+        with:
+          repository: Devidian/rw-plugin-oz-tools
+          ref: v0.17.1
+          path: .ci/rw-plugin-oz-tools
+
+      - name: Install OZ Tools locally
+        working-directory: .ci/rw-plugin-oz-tools
+        run: mvn -B -DskipTests install
 
       - name: Patch versions for tag release
         if: startsWith(github.ref, 'refs/tags/')
