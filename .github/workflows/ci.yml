@@ -181,11 +181,7 @@ jobs:
         run: |
           VERSION="${{ steps.meta.outputs.version }}"
 
-          awk -v newver="$VERSION" '
-            /<artifactId>[^<]+<\/artifactId>/ && seen == 0 { print; seen=1; next }
-            seen == 1 && /<version>/ { sub(/<version>.*<\/version>/, "<version>" newver "</version>"); seen=0 }
-            { print }
-          ' pom.xml > pom.xml.tmp && mv pom.xml.tmp pom.xml
+          sed -i "0,/<version>.*<\/version>/s//<version>${VERSION}<\/version>/" pom.xml
 
           sed -i "s/^version: .*/version: ${VERSION}/" src/resources/plugin.yml
 
