@@ -22,6 +22,7 @@ import de.omegazirkel.risingworld.wallet.WalletDatabase;
 import de.omegazirkel.risingworld.wallet.WalletService;
 import de.omegazirkel.risingworld.wallet.WalletTransactionResult;
 import de.omegazirkel.risingworld.wallet.ui.WalletCurrencyHud;
+import de.omegazirkel.risingworld.wallet.ui.WalletPlayerPluginData;
 import de.omegazirkel.risingworld.wallet.ui.WalletPlayerPluginSettings;
 import net.risingworld.api.Server;
 import net.risingworld.api.Plugin;
@@ -78,7 +79,8 @@ public class Wallet extends Plugin implements Listener, FileChangeListener {
             p.hideRadialMenu(true);
             gui.openWallet(p);
         }));
-        PlayerPluginSettingsOverlay.registerPlayerPluginSettings(new WalletPlayerPluginSettings());
+        PlayerPluginSettingsOverlay.registerPlayerPluginSettings(new WalletPlayerPluginSettings(getDescription("version")));
+        PlayerPluginSettingsOverlay.registerPlayerPluginData(new WalletPlayerPluginData(getDescription("version")));
         logger().info(this.getName() + " Plugin is enabled version:" + this.getDescription("version"));
     }
 
@@ -317,9 +319,10 @@ public class Wallet extends Plugin implements Listener, FileChangeListener {
         }
 
         WalletCurrencyHud hud = new WalletCurrencyHud(
+                t.get("TC_WALLET_INVENTORY_PANEL_TITLE", player),
                 balanceResult.balance.getCurrency(),
                 balanceResult.balance.getBalance());
-        player.addUIElement(hud, UITarget.HUD);
+        player.addUIElement(hud, UITarget.Inventory);
         player.setAttribute(WalletCurrencyHud.ATTRIBUTE_KEY, hud);
     }
 

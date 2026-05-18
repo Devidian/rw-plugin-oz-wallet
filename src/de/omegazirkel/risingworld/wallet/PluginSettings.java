@@ -21,10 +21,11 @@ public class PluginSettings {
     public String defaultCurrencyName = "Omega Zirkel Coin";
     public String defaultCurrencyIcon = "icon-ki-coin-omega-gold";
     public String walletCommand = "wallet";
-    public boolean enableWelcomeMessage = true;
+    public boolean enableWelcomeMessage = false;
     public boolean welcomeBonusEnabled = true;
-    public long welcomeBonusAmount = 10L;
+    public long welcomeBonusAmount = 100L;
     public boolean welcomeBonusAmountValid = true;
+    public int auditLogLimit = 50;
     public String logLevel = Level.ALL.name();
 
     private static OZLogger logger() {
@@ -73,15 +74,28 @@ public class PluginSettings {
             defaultCurrencyName = settings.getProperty("defaultCurrency.name", defaultCurrencyName);
             defaultCurrencyIcon = settings.getProperty("defaultCurrency.icon", defaultCurrencyIcon);
             walletCommand = settings.getProperty("walletCommand", walletCommand);
-            enableWelcomeMessage = settings.getProperty("sendPluginWelcome", "true").contentEquals("true");
+            enableWelcomeMessage = settings.getProperty("sendPluginWelcome", "false").contentEquals("true");
             welcomeBonusEnabled = settings.getProperty("welcomeBonus.enabled", "true").contentEquals("true");
             welcomeBonusAmountValid = true;
-            String welcomeBonusAmountValue = settings.getProperty("welcomeBonus.amount", "10");
+            String welcomeBonusAmountValue = settings.getProperty("welcomeBonus.amount", "100");
             try {
                 welcomeBonusAmount = Long.parseLong(welcomeBonusAmountValue.trim());
             } catch (NumberFormatException ex) {
                 welcomeBonusAmount = 0L;
                 welcomeBonusAmountValid = false;
+            }
+            String auditLogLimitValue = settings.getProperty("auditLogLimit", "50");
+            try {
+                int configuredAuditLogLimit = Integer.parseInt(auditLogLimitValue.trim());
+                if (configuredAuditLogLimit >= 0) {
+                    auditLogLimit = configuredAuditLogLimit;
+                } else {
+                    auditLogLimit = 50;
+                    logger().warn("Invalid auditLogLimit " + auditLogLimitValue + ", using default 50.");
+                }
+            } catch (NumberFormatException ex) {
+                auditLogLimit = 50;
+                logger().warn("Invalid auditLogLimit " + auditLogLimitValue + ", using default 50.");
             }
             logLevel = settings.getProperty("logLevel", "ALL");
 
@@ -90,6 +104,7 @@ public class PluginSettings {
             logger().info("Wallet command is /" + walletCommand);
             logger().info("Welcome bonus is " + (welcomeBonusEnabled ? "enabled" : "disabled")
                     + " with amount " + welcomeBonusAmount + " " + defaultCurrencyIdentifier);
+            logger().info("Audit log limit is " + (auditLogLimit == 0 ? "unlimited" : auditLogLimit));
             logger().info("Loglevel is set to " + logLevel);
             logger().setLevel(logLevel);
         } catch (IOException ex) {

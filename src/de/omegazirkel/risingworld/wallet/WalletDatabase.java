@@ -197,6 +197,30 @@ public class WalletDatabase {
         return balances;
     }
 
+    public List<WalletBalance> listGlobalBalances() throws SQLException {
+        String sql = """
+                SELECT c.identifier, c.name, c.icon, c.source_plugin, c.registered_at, c.is_default,
+                       COALESCE(SUM(b.balance), 0) AS balance,
+                       COALESCE(MAX(b.updated_at), 0) AS updated_at
+                FROM wallet_currencies c
+                LEFT JOIN wallet_balances b ON b.currency_identifier = c.identifier
+                GROUP BY c.identifier, c.name, c.icon, c.source_plugin, c.registered_at, c.is_default
+                ORDER BY c.is_default DESC, c.identifier ASC;
+                """;
+        List<WalletBalance> balances = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql);
+                ResultSet result = statement.executeQuery()) {
+            while (result.next()) {
+                balances.add(new WalletBalance(
+                        0,
+                        readCurrency(result),
+                        result.getLong("balance"),
+                        result.getLong("updated_at")));
+            }
+        }
+        return balances;
+    }
+
     public synchronized WalletTransaction changeBalance(
             int playerDbId,
             WalletCurrency currency,
@@ -255,6 +279,48 @@ public class WalletDatabase {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, playerDbId);
             statement.setInt(2, limit);
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) {
+                    WalletCurrency currency = new WalletCurrency(
+                            result.getString("identifier"),
+                            result.getString("name"),
+                            result.getString("icon"),
+                            result.getString("currency_source_plugin"),
+                            result.getLong("registered_at"),
+                            result.getInt("is_default") == 1);
+                    transactions.add(new WalletTransaction(
+                            result.getLong("id"),
+                            result.getInt("player_db_id"),
+                            currency,
+                            result.getLong("delta"),
+                            result.getLong("resulting_balance"),
+                            result.getString("source_plugin"),
+                            result.getString("reason"),
+                            result.getLong("created_at")));
+                }
+            }
+        }
+        return transactions;
+    }
+
+    public List<WalletTransaction> listLatestGlobalTransactions(int limit) throws SQLException {
+        boolean limited = limit > 0;
+        String sql = """
+                SELECT t.id, t.player_db_id, t.delta, t.resulting_balance, t.source_plugin, t.reason, t.created_at,
+                       c.identifier, c.name, c.icon, c.source_plugin AS currency_source_plugin,
+                       c.registered_at, c.is_default
+                FROM wallet_transactions t
+                JOIN wallet_currencies c ON c.identifier = t.currency_identifier
+                ORDER BY t.created_at DESC, t.id DESC
+                """;
+        if (limited) {
+            sql += "LIMIT ?;";
+        }
+        List<WalletTransaction> transactions = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            if (limited) {
+                statement.setInt(1, limit);
+            }
             try (ResultSet result = statement.executeQuery()) {
                 while (result.next()) {
                     WalletCurrency currency = new WalletCurrency(

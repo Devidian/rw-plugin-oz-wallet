@@ -133,8 +133,16 @@ public class WalletService {
         return database.listBalancesForPlayer(playerDbId, normalizeCurrencyIdentifier(defaultCurrencyIdentifier));
     }
 
+    public List<WalletBalance> listGlobalBalances() throws SQLException {
+        return database.listGlobalBalances();
+    }
+
     public List<WalletTransaction> listLatestTransactions(int playerDbId, int limit) throws SQLException {
         return database.listLatestTransactions(playerDbId, Math.min(Math.max(limit, 1), 100));
+    }
+
+    public List<WalletTransaction> listLatestGlobalTransactions(int limit) throws SQLException {
+        return database.listLatestGlobalTransactions(Math.max(limit, 0));
     }
 
     private WalletTransactionResult changeBalance(

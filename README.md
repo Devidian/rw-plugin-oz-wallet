@@ -21,15 +21,16 @@ defaultCurrency.identifier=OZC
 defaultCurrency.name=Omega Zirkel Coin
 defaultCurrency.icon=icon-ki-coin-omega-gold
 walletCommand=wallet
-sendPluginWelcome=true
+sendPluginWelcome=false
 welcomeBonus.enabled=true
-welcomeBonus.amount=10
+welcomeBonus.amount=100
+auditLogLimit=50
 logLevel=ALL
 ```
 
-The standalone wallet UI also appears in the OZ Tools radial plugin menu. Balances are shown as currency cards with their icon, amount, source plugin, and default-currency marker; transaction history remains in a table for scanning recent activity.
+The standalone wallet UI also appears in the OZ Tools radial plugin menu. Balances are shown as currency cards with their icon, amount, source plugin, and default-currency marker; transaction history remains in a table for scanning recent activity. Transaction timestamps are rendered as GMT in the wallet table. Admin players also see admin-only tabs for the latest global transactions, including player names, and total world balances grouped by currency. `auditLogLimit` controls how many global audit-log rows are shown to admins; the default is `50`, and `0` disables the limit.
 
-Player-specific settings are stored through `rw-plugin-oz-tools` player settings. `showWalletHud` defaults to `true` and is exposed in the OZ Tools player plugin settings overlay. When enabled, the player sees a compact bottom-right HUD with the current default-currency balance and currency icon; it updates after successful wallet bookings and is removed immediately when the player disables the setting.
+Player-specific settings are stored through `rw-plugin-oz-tools` player settings. The existing `showWalletHud` key defaults to `true` for compatibility and is exposed in the OZ Tools player plugin settings overlay as an inventory wallet toggle. When enabled, the player sees a compact `Geldbörse` / `Wallet` side panel in the inventory with the current default-currency balance and currency icon; it updates after successful wallet bookings and is removed immediately when the player disables the setting.
 
 `welcomeBonus.enabled` controls the one-time welcome bonus for new players. When enabled, the first spawn without the internal `oz.wallet.welcomeBonusClaimed` player setting deposits `welcomeBonus.amount` in the current default currency and then stores the claim flag through `rw-plugin-oz-tools` player settings. Set `welcomeBonus.enabled=false` to disable the bonus without setting claim flags. Amounts of `0`, negative values, or invalid numbers do not grant a bonus and leave the claim flag unset for a later valid configuration.
 

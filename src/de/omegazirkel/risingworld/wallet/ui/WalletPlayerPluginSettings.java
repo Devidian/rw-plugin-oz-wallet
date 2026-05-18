@@ -10,8 +10,9 @@ import net.risingworld.api.objects.Player;
 public class WalletPlayerPluginSettings extends PlayerPluginSettings {
     public static final String SHOW_WALLET_HUD_KEY = "oz.wallet.showWalletHud";
 
-    public WalletPlayerPluginSettings() {
+    public WalletPlayerPluginSettings(String pluginVersion) {
         this.pluginLabel = Wallet.name;
+        this.pluginVersion = pluginVersion;
     }
 
     private I18n t() {
