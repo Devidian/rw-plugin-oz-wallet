@@ -1,5 +1,7 @@
 # Roadmaps
 
+- [Wallet Roadmap Plan 01](wallet-roadmap-plan-01.md)
+
 Large implementation plans and long-lived roadmap documents live here.
 
 ## Template

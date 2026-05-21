@@ -4,6 +4,10 @@
 
 ## [unreleased]
 
+- feat: add admin top-20 positive standard-currency balance ranking with shared player-name lookup fallback
+- feat: extend the inventory wallet panel to show up to five currencies sorted by descending balance
+- fix: hide inventory wallet panel scrollbars
+
 ## [0.2.0] - 2026-05-18 | Admin wallet overview and inventory wallet panel
 
 - feat: add GMT timestamp labels plus admin-only global transaction and world-balance wallet tabs

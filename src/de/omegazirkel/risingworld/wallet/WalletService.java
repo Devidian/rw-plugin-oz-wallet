@@ -137,6 +137,10 @@ public class WalletService {
         return database.listGlobalBalances();
     }
 
+    public List<WalletBalance> listTopBalances(String currencyIdentifier, int limit) throws SQLException {
+        return database.listTopBalances(normalizeCurrencyIdentifier(currencyIdentifier), Math.min(Math.max(limit, 1), 100));
+    }
+
     public List<WalletTransaction> listLatestTransactions(int playerDbId, int limit) throws SQLException {
         return database.listLatestTransactions(playerDbId, Math.min(Math.max(limit, 1), 100));
     }

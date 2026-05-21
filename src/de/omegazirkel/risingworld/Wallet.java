@@ -3,6 +3,8 @@ package de.omegazirkel.risingworld;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Comparator;
+import java.util.List;
 
 import de.omegazirkel.risingworld.tools.Colors;
 import de.omegazirkel.risingworld.tools.FileChangeListener;
@@ -10,6 +12,7 @@ import de.omegazirkel.risingworld.tools.I18n;
 import de.omegazirkel.risingworld.tools.OZLogger;
 import de.omegazirkel.risingworld.tools.PlayerSettings;
 import de.omegazirkel.risingworld.tools.db.SQLiteConnectionFactory;
+import de.omegazirkel.risingworld.tools.settings.PlayerPluginAdminSettings;
 import de.omegazirkel.risingworld.tools.ui.AssetManager;
 import de.omegazirkel.risingworld.tools.ui.MenuItem;
 import de.omegazirkel.risingworld.tools.ui.PlayerPluginSettingsOverlay;
@@ -17,6 +20,7 @@ import de.omegazirkel.risingworld.tools.ui.PluginMenuManager;
 import de.omegazirkel.risingworld.wallet.PluginGUI;
 import de.omegazirkel.risingworld.wallet.PluginSettings;
 import de.omegazirkel.risingworld.wallet.WalletBalanceResult;
+import de.omegazirkel.risingworld.wallet.WalletBalance;
 import de.omegazirkel.risingworld.wallet.WalletCurrencyResult;
 import de.omegazirkel.risingworld.wallet.WalletDatabase;
 import de.omegazirkel.risingworld.wallet.WalletService;
@@ -81,6 +85,9 @@ public class Wallet extends Plugin implements Listener, FileChangeListener {
         }));
         PlayerPluginSettingsOverlay.registerPlayerPluginSettings(new WalletPlayerPluginSettings(getDescription("version")));
         PlayerPluginSettingsOverlay.registerPlayerPluginData(new WalletPlayerPluginData(getDescription("version")));
+        PlayerPluginSettingsOverlay.registerPlayerPluginAdminSettings(
+                new PlayerPluginAdminSettings(name, getDescription("version"), () -> s.adminSettingsEntries(),
+                        s::initSettings));
         logger().info(this.getName() + " Plugin is enabled version:" + this.getDescription("version"));
     }
 
@@ -208,7 +215,11 @@ public class Wallet extends Plugin implements Listener, FileChangeListener {
                     de.omegazirkel.risingworld.wallet.WalletErrorCode.DATABASE_ERROR,
                     "Wallet database is not available.");
         }
-        return walletService.registerCurrency(currencyIdentifier, name, icon, pluginIdentifier);
+        WalletCurrencyResult result = walletService.registerCurrency(currencyIdentifier, name, icon, pluginIdentifier);
+        if (result.success) {
+            refreshAllWalletHuds();
+        }
+        return result;
     }
 
     public WalletTransactionResult deposit(
@@ -305,23 +316,29 @@ public class Wallet extends Plugin implements Listener, FileChangeListener {
             return;
         }
 
-        WalletBalanceResult balanceResult = balanceDefaultForHud(player.getDbID());
-        if (!balanceResult.success || balanceResult.balance == null) {
-            logger().warn("Could not load wallet HUD balance for player " + player.getDbID() + ": "
-                    + balanceResult.message);
+        List<WalletBalance> balances;
+        try {
+            balances = walletService.listBalancesForPlayer(player.getDbID(), s.defaultCurrencyIdentifier).stream()
+                    .sorted(Comparator.comparingLong(WalletBalance::getBalance).reversed()
+                            .thenComparing(balance -> !balance.getCurrency().isDefaultCurrency())
+                            .thenComparing(balance -> balance.getCurrency().getIdentifier()))
+                    .limit(5)
+                    .toList();
+        } catch (SQLException ex) {
+            logger().warn("Could not load wallet HUD balances for player " + player.getDbID() + ": "
+                    + ex.getMessage());
             return;
         }
 
         Object existing = player.getAttribute(WalletCurrencyHud.ATTRIBUTE_KEY);
         if (existing instanceof WalletCurrencyHud hud) {
-            hud.update(balanceResult.balance.getCurrency(), balanceResult.balance.getBalance());
+            hud.update(balances);
             return;
         }
 
         WalletCurrencyHud hud = new WalletCurrencyHud(
                 t.get("TC_WALLET_INVENTORY_PANEL_TITLE", player),
-                balanceResult.balance.getCurrency(),
-                balanceResult.balance.getBalance());
+                balances);
         player.addUIElement(hud, UITarget.Inventory);
         player.setAttribute(WalletCurrencyHud.ATTRIBUTE_KEY, hud);
     }
@@ -352,15 +369,6 @@ public class Wallet extends Plugin implements Listener, FileChangeListener {
         for (Player player : Server.getAllPlayers()) {
             syncWalletHud(player);
         }
-    }
-
-    private static WalletBalanceResult balanceDefaultForHud(int playerDbId) {
-        if (walletService == null) {
-            return WalletBalanceResult.failure(
-                    de.omegazirkel.risingworld.wallet.WalletErrorCode.DATABASE_ERROR,
-                    "Wallet database is not available.");
-        }
-        return walletService.balance(playerDbId, s.defaultCurrencyIdentifier);
     }
 
     public PluginSettings getSettings() {

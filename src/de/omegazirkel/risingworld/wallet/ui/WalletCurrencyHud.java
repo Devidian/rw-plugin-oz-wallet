@@ -1,9 +1,15 @@
 package de.omegazirkel.risingworld.wallet.ui;
 
+import java.util.List;
+
 import de.omegazirkel.risingworld.tools.ui.AssetManager;
 import de.omegazirkel.risingworld.tools.ui.OZUIElement;
+import de.omegazirkel.risingworld.wallet.WalletBalance;
 import de.omegazirkel.risingworld.wallet.WalletCurrency;
 import net.risingworld.api.ui.UILabel;
+import net.risingworld.api.ui.UIScrollView;
+import net.risingworld.api.ui.UIScrollView.ScrollViewMode;
+import net.risingworld.api.ui.UIScrollView.ScrollerVisibility;
 import net.risingworld.api.ui.style.Font;
 import net.risingworld.api.ui.style.Pivot;
 import net.risingworld.api.ui.style.Position;
@@ -15,20 +21,20 @@ public class WalletCurrencyHud extends OZUIElement {
     public static final String ATTRIBUTE_KEY = "wallet.ui.currencyHud";
 
     private static final float PANEL_WIDTH = 280f;
-    private static final float PANEL_HEIGHT = 118f;
-    private static final float ICON_SIZE = 42f;
+    private static final float PANEL_HEIGHT = 50f;
+    private static final float ROW_HEIGHT = 66f;
+    private static final float ICON_SIZE = 28f;
 
-    private final UILabel amountLabel;
-    private final UILabel currencyLabel;
-    private final OZUIElement icon;
+    private final OZUIElement rows;
+    private final UIScrollView scrollView;
 
-    public WalletCurrencyHud(String titleText, WalletCurrency currency, long amount) {
+    public WalletCurrencyHud(String titleText, List<WalletBalance> balances) {
         setPivot(Pivot.UpperLeft);
         style.position.set(Position.Absolute);
         style.left.set(78, Unit.Percent);
         style.top.set(20.5f, Unit.Percent);
         style.width.set(PANEL_WIDTH, Unit.Pixel);
-        style.height.set(PANEL_HEIGHT, Unit.Pixel);
+        style.height.set(PANEL_HEIGHT, Unit.Percent);
         setBackgroundColor(0f, 0f, 0f, 0.74f);
         setBorder(1);
         setBorderColor(0.95f, 0.75f, 0.25f, 0.42f);
@@ -45,60 +51,113 @@ public class WalletCurrencyHud extends OZUIElement {
         title.setTextWrap(false);
         addChild(title);
 
-        OZUIElement content = new OZUIElement();
-        content.setPivot(Pivot.UpperLeft);
-        content.setPosition(16, 48, false);
-        content.style.width.set(248, Unit.Pixel);
-        content.style.height.set(52, Unit.Pixel);
-        content.setBackgroundColor(0.08f, 0.08f, 0.08f, 0.55f);
-        content.setBorder(1);
-        content.setBorderColor(0.95f, 0.75f, 0.25f, 0.28f);
-        addChild(content);
+        scrollView = new UIScrollView(ScrollViewMode.Vertical);
+        scrollView.setPivot(Pivot.UpperLeft);
+        scrollView.setPosition(14, 48, false);
+        scrollView.style.width.set(252, Unit.Pixel);
+        scrollView.style.height.set(212, Unit.Pixel);
+        scrollView.setHorizontalScrollerVisibility(ScrollerVisibility.Hidden);
+        scrollView.setVerticalScrollerVisibility(ScrollerVisibility.Hidden);
+        scrollView.setMouseWheelScrollSize(24);
+        scrollView.setBackgroundColor(0.08f, 0.08f, 0.08f, 0.55f);
+        scrollView.setBorder(1);
+        scrollView.setBorderColor(0.95f, 0.75f, 0.25f, 0.28f);
+        addChild(scrollView);
 
-        icon = new OZUIElement();
-        icon.setPivot(Pivot.UpperLeft);
-        icon.style.position.set(Position.Absolute);
-        icon.style.left.set(10, Unit.Pixel);
-        icon.style.top.set(5, Unit.Pixel);
-        icon.style.width.set(ICON_SIZE, Unit.Pixel);
-        icon.style.height.set(ICON_SIZE, Unit.Pixel);
-        icon.style.backgroundImageScaleMode.set(ScaleMode.ScaleToFit);
-        content.addChild(icon);
+        rows = new OZUIElement();
+        rows.setPivot(Pivot.UpperLeft);
+        rows.setAbsolute();
+        rows.style.width.set(236, Unit.Pixel);
+        rows.style.height.set(100, Unit.Percent);
+        scrollView.addChild(rows);
 
-        amountLabel = new UILabel(Long.toString(amount));
-        amountLabel.setPivot(Pivot.UpperLeft);
-        amountLabel.style.position.set(Position.Absolute);
-        amountLabel.style.left.set(66, Unit.Pixel);
-        amountLabel.style.top.set(5, Unit.Pixel);
-        amountLabel.style.width.set(168, Unit.Pixel);
-        amountLabel.style.height.set(27, Unit.Pixel);
-        amountLabel.setFont(Font.DefaultBold);
-        amountLabel.setFontSize(22);
-        amountLabel.setFontColor(0xF5D36AFF);
-        amountLabel.setTextAlign(TextAnchor.MiddleLeft);
-        amountLabel.setTextWrap(false);
-        content.addChild(amountLabel);
+        update(balances);
+    }
 
-        currencyLabel = new UILabel("");
-        currencyLabel.setPivot(Pivot.UpperLeft);
-        currencyLabel.style.position.set(Position.Absolute);
-        currencyLabel.style.left.set(67, Unit.Pixel);
-        currencyLabel.style.top.set(31, Unit.Pixel);
-        currencyLabel.style.width.set(168, Unit.Pixel);
-        currencyLabel.style.height.set(16, Unit.Pixel);
-        currencyLabel.setFont(Font.Default);
-        currencyLabel.setFontSize(11);
-        currencyLabel.setFontColor(0xD8D8D8FF);
-        currencyLabel.setTextAlign(TextAnchor.MiddleLeft);
-        currencyLabel.setTextWrap(false);
-        content.addChild(currencyLabel);
-
-        update(currency, amount);
+    public void update(List<WalletBalance> balances) {
+        rows.removeAllChilds();
+        int visibleRows = balances == null || balances.isEmpty() ? 1 : Math.min(balances.size(), 8);
+        float contentHeight = visibleRows * ROW_HEIGHT;
+        int totalRows = balances == null || balances.isEmpty() ? 1 : balances.size();
+        style.height.set(66 + contentHeight, Unit.Pixel);
+        scrollView.style.height.set(contentHeight, Unit.Pixel);
+        rows.style.height.set(totalRows * ROW_HEIGHT, Unit.Pixel);
+        if (balances == null || balances.isEmpty()) {
+            rows.addChild(emptyRow());
+            return;
+        }
+        int index = 0;
+        for (WalletBalance balance : balances) {
+            rows.addChild(balanceRow(balance, index));
+            index++;
+        }
     }
 
     public void update(WalletCurrency currency, long amount) {
-        amountLabel.setText(Long.toString(amount));
-        currencyLabel.setText(currency.getIdentifier());
+        update(List.of(new WalletBalance(0, currency, amount, 0L)));
+    }
+
+    private OZUIElement balanceRow(WalletBalance balance, int index) {
+        WalletCurrency currency = balance.getCurrency();
+        OZUIElement row = new OZUIElement();
+        row.setPivot(Pivot.UpperLeft);
+        row.setAbsolute();
+        row.style.left.set(0, Unit.Pixel);
+        row.style.top.set(index * ROW_HEIGHT, Unit.Pixel);
+        row.style.width.set(100, Unit.Percent);
+        row.style.height.set(ROW_HEIGHT, Unit.Pixel);
+
+        OZUIElement icon = new OZUIElement();
+        icon.setPivot(Pivot.UpperLeft);
+        icon.style.position.set(Position.Absolute);
+        icon.style.left.set(10, Unit.Pixel);
+        icon.style.top.set(7, Unit.Pixel);
+        icon.style.width.set(ICON_SIZE, Unit.Pixel);
+        icon.style.height.set(ICON_SIZE, Unit.Pixel);
         icon.style.backgroundImage.set(AssetManager.getIcon(currency.getIconKey()));
+        icon.style.backgroundImageScaleMode.set(ScaleMode.ScaleToFit);
+        row.addChild(icon);
+
+        UILabel amountLabel = new UILabel(balance.getBalance() + " " + currency.getIdentifier());
+        amountLabel.setPivot(Pivot.UpperLeft);
+        amountLabel.style.position.set(Position.Absolute);
+        amountLabel.style.left.set(48, Unit.Pixel);
+        amountLabel.style.top.set(4, Unit.Pixel);
+        amountLabel.style.width.set(188, Unit.Pixel);
+        amountLabel.style.height.set(22, Unit.Pixel);
+        amountLabel.setFont(Font.DefaultBold);
+        amountLabel.setFontSize(17);
+        amountLabel.setFontColor(0xF5D36AFF);
+        amountLabel.setTextAlign(TextAnchor.MiddleLeft);
+        amountLabel.setTextWrap(false);
+        row.addChild(amountLabel);
+
+        UILabel nameLabel = new UILabel(currency.getName());
+        nameLabel.setPivot(Pivot.UpperLeft);
+        nameLabel.style.position.set(Position.Absolute);
+        nameLabel.style.left.set(49, Unit.Pixel);
+        nameLabel.style.top.set(25, Unit.Pixel);
+        nameLabel.style.width.set(188, Unit.Pixel);
+        nameLabel.style.height.set(15, Unit.Pixel);
+        nameLabel.setFont(Font.Default);
+        nameLabel.setFontSize(11);
+        nameLabel.setFontColor(0xD8D8D8FF);
+        nameLabel.setTextAlign(TextAnchor.MiddleLeft);
+        nameLabel.setTextWrap(false);
+        row.addChild(nameLabel);
+
+        return row;
+    }
+
+    private UILabel emptyRow() {
+        UILabel label = new UILabel("-");
+        label.setPivot(Pivot.UpperLeft);
+        label.style.width.set(100, Unit.Percent);
+        label.style.height.set(30, Unit.Pixel);
+        label.setFont(Font.Default);
+        label.setFontSize(16);
+        label.setFontColor(0xD8D8D8FF);
+        label.setTextAlign(TextAnchor.MiddleLeft);
+        return label;
     }
 }

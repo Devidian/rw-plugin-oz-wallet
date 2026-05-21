@@ -221,6 +221,35 @@ public class WalletDatabase {
         return balances;
     }
 
+    public List<WalletBalance> listTopBalances(String currencyIdentifier, int limit) throws SQLException {
+        String sql = """
+                SELECT b.player_db_id,
+                       c.identifier, c.name, c.icon, c.source_plugin, c.registered_at, c.is_default,
+                       b.balance,
+                       b.updated_at
+                FROM wallet_balances b
+                JOIN wallet_currencies c ON c.identifier = b.currency_identifier
+                WHERE b.currency_identifier = ? AND b.balance > 0
+                ORDER BY b.balance DESC, b.player_db_id ASC
+                LIMIT ?;
+                """;
+        List<WalletBalance> balances = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, currencyIdentifier);
+            statement.setInt(2, limit);
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) {
+                    balances.add(new WalletBalance(
+                            result.getInt("player_db_id"),
+                            readCurrency(result),
+                            result.getLong("balance"),
+                            result.getLong("updated_at")));
+                }
+            }
+        }
+        return balances;
+    }
+
     public synchronized WalletTransaction changeBalance(
             int playerDbId,
             WalletCurrency currency,

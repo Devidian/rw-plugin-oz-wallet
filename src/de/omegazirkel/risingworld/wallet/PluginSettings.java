@@ -12,6 +12,9 @@ import org.apache.logging.log4j.Level;
 
 import de.omegazirkel.risingworld.Wallet;
 import de.omegazirkel.risingworld.tools.OZLogger;
+import de.omegazirkel.risingworld.tools.settings.AdminSettingsEntry;
+import de.omegazirkel.risingworld.tools.settings.AdminSettingsType;
+import de.omegazirkel.risingworld.tools.settings.SettingsFileEditor;
 
 public class PluginSettings {
     private static PluginSettings instance = null;
@@ -27,6 +30,7 @@ public class PluginSettings {
     public boolean welcomeBonusAmountValid = true;
     public int auditLogLimit = 50;
     public String logLevel = Level.ALL.name();
+    public boolean reloadOnChange = true;
 
     private static OZLogger logger() {
         return OZLogger.getInstance("OZ.Wallet.Settings");
@@ -74,6 +78,7 @@ public class PluginSettings {
             defaultCurrencyName = settings.getProperty("defaultCurrency.name", defaultCurrencyName);
             defaultCurrencyIcon = settings.getProperty("defaultCurrency.icon", defaultCurrencyIcon);
             walletCommand = settings.getProperty("walletCommand", walletCommand);
+            reloadOnChange = settings.getProperty("reloadOnChange", "true").contentEquals("true");
             enableWelcomeMessage = settings.getProperty("sendPluginWelcome", "false").contentEquals("true");
             welcomeBonusEnabled = settings.getProperty("welcomeBonus.enabled", "true").contentEquals("true");
             welcomeBonusAmountValid = true;
@@ -114,5 +119,41 @@ public class PluginSettings {
             logger().error("NumberFormatException on initSettings: " + ex.getMessage());
             ex.printStackTrace();
         }
+    }
+
+    public java.util.List<AdminSettingsEntry> adminSettingsEntries() {
+        return java.util.List.of(
+                entry("logLevel", "Log level", "Controls Wallet logging verbosity.", logLevel, "ALL",
+                        AdminSettingsType.STRING),
+                entry("reloadOnChange", "Reload on change",
+                        "Documents that Wallet settings reload when settings.properties changes.", reloadOnChange,
+                        "true", AdminSettingsType.BOOLEAN),
+                entry("walletCommand", "Wallet command", "Chat command used to open the wallet.", walletCommand,
+                        "wallet", AdminSettingsType.STRING),
+                entry("sendPluginWelcome", "Welcome message", "Shows a short wallet message when a player joins.",
+                        enableWelcomeMessage, "false", AdminSettingsType.BOOLEAN),
+                entry("welcomeBonus.enabled", "Welcome bonus", "Enables the first-join welcome bonus.",
+                        welcomeBonusEnabled, "true", AdminSettingsType.BOOLEAN),
+                entry("welcomeBonus.amount", "Welcome bonus amount", "Amount paid for the first-join welcome bonus.",
+                        welcomeBonusAmount, "100", AdminSettingsType.INTEGER),
+                entry("auditLogLimit", "Audit log limit", "Maximum number of wallet audit rows shown in UI.",
+                        auditLogLimit, "50", AdminSettingsType.INTEGER));
+    }
+
+    private AdminSettingsEntry entry(String key, String label, String description, Object value, String defaultValue,
+            AdminSettingsType type) {
+        return new AdminSettingsEntry(
+                key,
+                label,
+                description,
+                String.valueOf(value),
+                defaultValue,
+                type,
+                false,
+                newValue -> SettingsFileEditor.writeValue(settingsPath(), key, newValue));
+    }
+
+    private Path settingsPath() {
+        return Paths.get((plugin.getPath() != null ? plugin.getPath() : ".") + "/settings.properties");
     }
 }

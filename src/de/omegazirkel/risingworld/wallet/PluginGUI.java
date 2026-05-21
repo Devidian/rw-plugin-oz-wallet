@@ -5,11 +5,16 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 
 import de.omegazirkel.risingworld.Wallet;
 import de.omegazirkel.risingworld.tools.I18n;
+import de.omegazirkel.risingworld.tools.PlayerDatabaseHelper;
+import de.omegazirkel.risingworld.tools.PlayerDatabaseHelper.PlayerRecord;
 import de.omegazirkel.risingworld.tools.ui.AssetManager;
 import de.omegazirkel.risingworld.tools.ui.CursorManager;
 import de.omegazirkel.risingworld.tools.ui.OverlayBackPanel;
@@ -95,6 +100,8 @@ public class PluginGUI {
         return I18n.getInstance(Wallet.name);
     }
 
+    // TODO: refactor -> move into seperate file ui/WalletOverlay
+    // TODO: refactor -> extend new BasePluginOverlayWithTabs from Tools to reduce code here
     private static class WalletOverlay extends OverlayBackPanel {
         private final Wallet plugin;
         private final WalletService service;
@@ -105,6 +112,7 @@ public class PluginGUI {
         private final OZUIElement transactionsTab;
         private final OZUIElement adminTransactionsTab;
         private final OZUIElement globalBalancesTab;
+        private final OZUIElement topBalancesTab;
         private String activeTab = "balances";
 
         WalletOverlay(Player player, Wallet plugin) {
@@ -140,16 +148,21 @@ public class PluginGUI {
             panel.addChild(transactionsTab);
 
             if (uiPlayer.isAdmin()) {
-                adminTransactionsTab = tab(t().get("TC_WALLET_TAB_ADMIN_TRANSACTIONS", uiPlayer), 359, 82, 205,
+                adminTransactionsTab = tab(t().get("TC_WALLET_TAB_ADMIN_TRANSACTIONS", uiPlayer), 359, 82, 160,
                         () -> showAdminTransactions());
                 panel.addChild(adminTransactionsTab);
 
-                globalBalancesTab = tab(t().get("TC_WALLET_TAB_GLOBAL_BALANCES", uiPlayer), 564, 82, 205,
+                globalBalancesTab = tab(t().get("TC_WALLET_TAB_GLOBAL_BALANCES", uiPlayer), 519, 82, 190,
                         () -> showGlobalBalances());
                 panel.addChild(globalBalancesTab);
+
+                topBalancesTab = tab(t().get("TC_WALLET_TAB_TOP_BALANCES", uiPlayer), 709, 82, 160,
+                        () -> showTopBalances());
+                panel.addChild(topBalancesTab);
             } else {
                 adminTransactionsTab = null;
                 globalBalancesTab = null;
+                topBalancesTab = null;
             }
 
             OZUIElement closeButton = new OZUIElement();
@@ -211,12 +224,10 @@ public class PluginGUI {
                 content.setPivot(Pivot.UpperLeft);
                 content.setPosition(0, 0, false);
                 content.style.width.set(100, Unit.Percent);
-                content.style.height.set(100, Unit.Percent);
-                // content.style.height.set(Math.max(407, balances.size() * 144), Unit.Pixel);
+                content.style.height.set(Math.max(407, ((balances.size() + 2) / 3) * 144), Unit.Pixel);
                 content.style.display.set(DisplayStyle.Flex);
                 content.style.flexDirection.set(FlexDirection.Row);
                 content.style.flexWrap.set(Wrap.Wrap);
-                // content.style.justifyContent.set(Justify.FlexStart);
                 scrollView.addChild(content);
 
                 for (WalletBalance balance : balances) {
@@ -344,6 +355,55 @@ public class PluginGUI {
             }
         }
 
+        private void showTopBalances() {
+            if (!uiPlayer.isAdmin()) {
+                return;
+            }
+            activeTab = "topBalances";
+            applyTabStyles();
+            body.removeAllChilds();
+            try {
+                List<WalletBalance> balances = service.listTopBalances(plugin.getSettings().defaultCurrencyIdentifier, 20);
+                if (balances.isEmpty()) {
+                    body.addChild(message(t().get("TC_WALLET_EMPTY_TOP_BALANCES", uiPlayer)));
+                    return;
+                }
+                Set<Integer> playerDbIds = new LinkedHashSet<>();
+                for (WalletBalance balance : balances) {
+                    playerDbIds.add(balance.getPlayerDbId());
+                }
+                Map<Integer, PlayerRecord> playerRecords = PlayerDatabaseHelper.findPlayersByDbIds(plugin, playerDbIds);
+                TableScrollView table = new TableScrollView(
+                        Arrays.asList(
+                                t().get("TC_WALLET_COL_RANK", uiPlayer),
+                                t().get("TC_WALLET_COL_PLAYER", uiPlayer),
+                                t().get("TC_WALLET_COL_AMOUNT", uiPlayer),
+                                t().get("TC_WALLET_COL_CURRENCY", uiPlayer),
+                                t().get("TC_WALLET_COL_IDENTIFIER", uiPlayer),
+                                t().get("TC_WALLET_COL_SOURCE", uiPlayer)),
+                        Arrays.asList(8f, 24f, 16f, 20f, 14f, 18f));
+                table.setPosition(0, 0, false);
+                table.style.width.set(100, Unit.Percent);
+                table.setScrollBodyHeight(TABLE_SCROLL_BODY_HEIGHT);
+                int rank = 1;
+                for (WalletBalance balance : balances) {
+                    WalletCurrency currency = balance.getCurrency();
+                    table.addRow(new TableRow(new ArrayList<>(Arrays.asList(
+                            cell("#" + rank, 8f),
+                            cell(playerName(balance.getPlayerDbId(), playerRecords), 24f),
+                            cell(Long.toString(balance.getBalance()), 16f),
+                            cell(currency.getName(), 20f),
+                            cell(currency.getIdentifier(), 14f),
+                            cell(currency.getPluginIdentifier(), 18f)))));
+                    rank++;
+                }
+                body.addChild(table.getRoot());
+            } catch (SQLException ex) {
+                Wallet.logger().error("Failed to render wallet top balances: " + ex.getMessage());
+                body.addChild(message(t().get("TC_WALLET_ERR_LOAD_BALANCES", uiPlayer)));
+            }
+        }
+
         private OZUIElement tab(
                 String text,
                 float x,
@@ -375,6 +435,7 @@ public class PluginGUI {
             styleTab(transactionsTab, "transactions".equals(activeTab));
             styleAdminTab(adminTransactionsTab, "adminTransactions".equals(activeTab));
             styleAdminTab(globalBalancesTab, "globalBalances".equals(activeTab));
+            styleAdminTab(topBalancesTab, "topBalances".equals(activeTab));
         }
 
         private void styleTab(OZUIElement tab, boolean active) {
@@ -407,8 +468,6 @@ public class PluginGUI {
             WalletCurrency currency = balance.getCurrency();
             OZUIElement card = new OZUIElement();
             card.setPivot(Pivot.UpperLeft);
-            card.style.position.set(Position.Absolute);
-            // card.setPosition(0, 0, false);
             card.setSize(280, 124, false);
             card.setMargin(10f);
             card.setBackgroundColor(0.14f, 0.13f, 0.12f, 0.92f);
@@ -495,6 +554,18 @@ public class PluginGUI {
         private String playerName(int playerDbId) {
             String name = Server.getLastKnownPlayerName(playerDbId);
             return name == null || name.isBlank() ? "#" + playerDbId : name;
+        }
+
+        private String playerName(int playerDbId, Map<Integer, PlayerRecord> playerRecords) {
+            String serverName = Server.getLastKnownPlayerName(playerDbId);
+            if (serverName != null && !serverName.isBlank()) {
+                return serverName;
+            }
+            PlayerRecord record = playerRecords.get(playerDbId);
+            if (record != null && record.name != null && !record.name.isBlank()) {
+                return record.name;
+            }
+            return "#" + playerDbId;
         }
     }
 
