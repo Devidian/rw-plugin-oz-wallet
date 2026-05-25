@@ -4,6 +4,9 @@
 
 ## [unreleased]
 
+- feat: add shared Tools Info/Status panel content for Wallet and route info/status commands to it
+- feat: expose default currency settings with grouped admin metadata and i18n labels
+- refactor: route Wallet settings logging through the main `OZ.Wallet` logger
 - feat: add admin top-20 positive standard-currency balance ranking with shared player-name lookup fallback
 - feat: extend the inventory wallet panel to show up to five currencies sorted by descending balance
 - fix: hide inventory wallet panel scrollbars

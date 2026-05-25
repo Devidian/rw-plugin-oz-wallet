@@ -12,6 +12,11 @@ Wallet and economy state plugin for Rising World.
 
 `rw-plugin-oz-tools` is a hard runtime dependency.
 
+## Commands
+
+- `/wallet`: open the wallet UI.
+- `/wallet status` or `/wallet info`: open the shared Tools Info/Status panel.
+
 ## Settings
 
 The plugin copies `settings.default.properties` to `settings.properties` on first run.

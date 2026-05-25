@@ -16,6 +16,7 @@ import de.omegazirkel.risingworld.tools.settings.PlayerPluginAdminSettings;
 import de.omegazirkel.risingworld.tools.ui.AssetManager;
 import de.omegazirkel.risingworld.tools.ui.MenuItem;
 import de.omegazirkel.risingworld.tools.ui.PlayerPluginSettingsOverlay;
+import de.omegazirkel.risingworld.tools.ui.PluginInfoStatusProviders;
 import de.omegazirkel.risingworld.tools.ui.PluginMenuManager;
 import de.omegazirkel.risingworld.wallet.PluginGUI;
 import de.omegazirkel.risingworld.wallet.PluginSettings;
@@ -23,6 +24,7 @@ import de.omegazirkel.risingworld.wallet.WalletBalanceResult;
 import de.omegazirkel.risingworld.wallet.WalletBalance;
 import de.omegazirkel.risingworld.wallet.WalletCurrencyResult;
 import de.omegazirkel.risingworld.wallet.WalletDatabase;
+import de.omegazirkel.risingworld.wallet.WalletPluginInfoStatusProvider;
 import de.omegazirkel.risingworld.wallet.WalletService;
 import de.omegazirkel.risingworld.wallet.WalletTransactionResult;
 import de.omegazirkel.risingworld.wallet.ui.WalletCurrencyHud;
@@ -88,11 +90,15 @@ public class Wallet extends Plugin implements Listener, FileChangeListener {
         PlayerPluginSettingsOverlay.registerPlayerPluginAdminSettings(
                 new PlayerPluginAdminSettings(name, getDescription("version"), () -> s.adminSettingsEntries(),
                         s::initSettings));
+        PluginInfoStatusProviders.registerProvider(new WalletPluginInfoStatusProvider(this, getDescription("version")));
         logger().info(this.getName() + " Plugin is enabled version:" + this.getDescription("version"));
     }
 
     @Override
     public void onDisable() {
+        if (name != null) {
+            PluginInfoStatusProviders.unregisterProvider(name);
+        }
         for (Player player : Server.getAllPlayers()) {
             removeWalletHud(player);
         }
@@ -129,6 +135,11 @@ public class Wallet extends Plugin implements Listener, FileChangeListener {
         String command = cmdParts[0];
 
         if (command.equals("/" + s.walletCommand)) {
+            if (cmdParts.length > 1
+                    && (cmdParts[1].equalsIgnoreCase("status") || cmdParts[1].equalsIgnoreCase("info"))) {
+                PluginInfoStatusProviders.show(player, name);
+                return;
+            }
             if (walletService == null) {
                 player.sendTextMessage(c.error + this.getName() + ": wallet database is not available.");
                 return;
@@ -271,6 +282,10 @@ public class Wallet extends Plugin implements Listener, FileChangeListener {
         }
         String identifier = walletService.defaultCurrencyIdentifier();
         return identifier == null ? s.defaultCurrencyIdentifier : identifier;
+    }
+
+    public boolean databaseAvailable() {
+        return walletService != null;
     }
 
     public WalletCurrencyResult defaultCurrency() {

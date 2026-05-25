@@ -1,5 +1,6 @@
 # Roadmaps
 
+- [Roadmap Plan 02 Plugin Standardization](roadmap-plan-02-plugin-standardization.md)
 - [Wallet Roadmap Plan 01](wallet-roadmap-plan-01.md)
 
 Large implementation plans and long-lived roadmap documents live here.
