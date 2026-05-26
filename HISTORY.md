@@ -4,6 +4,8 @@
 
 ## [unreleased]
 
+## [0.3.0] - 2026-05-26 | Wallet bridge and status panel
+
 - feat: expose public Wallet currency-list API for sibling plugin dropdowns and bridge integrations
 - feat: add shared Tools Info/Status panel content for Wallet and route info/status commands to it
 - feat: expose default currency settings with grouped admin metadata and i18n labels
