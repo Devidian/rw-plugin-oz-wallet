@@ -76,6 +76,8 @@ public String defaultCurrencyIdentifier();
 
 public WalletCurrencyResult defaultCurrency();
 
+public WalletCurrenciesResult listCurrencies();
+
 public WalletTransactionResult depositDefault(
     int playerDbId,
     long value,
@@ -96,6 +98,8 @@ public WalletBalanceResult balanceDefault(
 ```
 
 Currency identifiers are trimmed and normalized to uppercase. Amounts are whole-number positive `long` values. Unknown currencies return `UNKNOWN_CURRENCY`, invalid inputs return `INVALID_ARGUMENT`, duplicate currency identifiers from another plugin return `CURRENCY_ALREADY_REGISTERED`, and withdrawals never allow negative balances. The `*Default` convenience methods use the configured default currency.
+
+`listCurrencies()` returns `WalletCurrenciesResult` with public fields `success`, `errorCode`, `message`, and `currencies`. Each `WalletCurrency` exposes `getIdentifier()`, `getName()`, `getIconKey()`, `getPluginIdentifier()`, `getRegisteredAt()`, and `isDefaultCurrency()`. The list is ordered with the default currency first, then by currency identifier.
 
 ## Optional integration from other plugins
 
@@ -191,6 +195,10 @@ public final class WalletConnect {
                 new Object[] { playerDbId, value, reason, pluginIdentifier });
     }
 
+    public static Object listCurrencies() {
+        return callWalletMethod("listCurrencies", new Class<?>[] {}, new Object[] {});
+    }
+
     public static boolean isSuccess(Object result) {
         Object success = getResultField(result, "success");
         return success instanceof Boolean && (Boolean) success;
@@ -199,6 +207,10 @@ public final class WalletConnect {
     public static String message(Object result) {
         Object message = getResultField(result, "message");
         return message instanceof String ? (String) message : "";
+    }
+
+    public static Object currencies(Object result) {
+        return getResultField(result, "currencies");
     }
 
     private static Object callWalletMethod(String methodName, Class<?>[] paramTypes, Object[] args) {

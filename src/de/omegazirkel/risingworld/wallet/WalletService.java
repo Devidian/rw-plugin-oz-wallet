@@ -128,6 +128,15 @@ public class WalletService {
         return WalletCurrencyResult.success(defaultCurrency);
     }
 
+    public WalletCurrenciesResult listCurrencies() {
+        try {
+            return WalletCurrenciesResult.success(database.listCurrencies());
+        } catch (SQLException ex) {
+            Wallet.logger().error("listCurrencies failed: " + ex.getMessage());
+            return WalletCurrenciesResult.failure(WalletErrorCode.DATABASE_ERROR, "Currency list lookup failed.");
+        }
+    }
+
     public List<WalletBalance> listBalancesForPlayer(int playerDbId, String defaultCurrencyIdentifier)
             throws SQLException {
         return database.listBalancesForPlayer(playerDbId, normalizeCurrencyIdentifier(defaultCurrencyIdentifier));

@@ -4,6 +4,7 @@
 
 ## [unreleased]
 
+- feat: expose public Wallet currency-list API for sibling plugin dropdowns and bridge integrations
 - feat: add shared Tools Info/Status panel content for Wallet and route info/status commands to it
 - feat: expose default currency settings with grouped admin metadata and i18n labels
 - refactor: route Wallet settings logging through the main `OZ.Wallet` logger

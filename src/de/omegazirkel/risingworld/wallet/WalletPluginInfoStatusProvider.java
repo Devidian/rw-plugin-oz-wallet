@@ -26,6 +26,7 @@ public class WalletPluginInfoStatusProvider implements PluginInfoStatusProvider 
         PluginSettings settings = PluginSettings.getInstance();
         return t().get("TC_WALLET_INFO_PANEL_INFO", player)
                 .replace("PH_PLUGIN_NAME", pluginName)
+                .replace("PH_VERSION", version)
                 .replace("PH_PLUGIN_CMD", settings.walletCommand);
     }
 
@@ -33,17 +34,13 @@ public class WalletPluginInfoStatusProvider implements PluginInfoStatusProvider 
     public String getStatus(Player player) {
         PluginSettings settings = PluginSettings.getInstance();
         return t().get("TC_WALLET_INFO_PANEL_STATUS", player)
-                .replace("PH_VERSION", version)
                 .replace("PH_DATABASE_STATUS", plugin.databaseAvailable() ? "available" : "missing")
                 .replace("PH_DEFAULT_CURRENCY", plugin.defaultCurrencyIdentifier())
                 .replace("PH_DEFAULT_CURRENCY_NAME", settings.defaultCurrencyName)
                 .replace("PH_WALLET_HUD", String.valueOf(Wallet.isWalletHudEnabled(player)))
                 .replace("PH_WELCOME_BONUS", String.valueOf(settings.welcomeBonusEnabled))
                 .replace("PH_WELCOME_BONUS_AMOUNT", String.valueOf(settings.welcomeBonusAmount))
-                .replace("PH_AUDIT_LOG_LIMIT", String.valueOf(settings.auditLogLimit))
-                .replace("PH_LOG_LEVEL", settings.logLevel)
-                .replace("PH_RELOAD_ON_CHANGE", String.valueOf(settings.reloadOnChange))
-                .replace("PH_WELCOME_MESSAGE", String.valueOf(settings.enableWelcomeMessage));
+                .replace("PH_AUDIT_LOG_LIMIT", String.valueOf(settings.auditLogLimit));
     }
 
     private I18n t() {

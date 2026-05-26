@@ -22,6 +22,7 @@ import de.omegazirkel.risingworld.wallet.PluginGUI;
 import de.omegazirkel.risingworld.wallet.PluginSettings;
 import de.omegazirkel.risingworld.wallet.WalletBalanceResult;
 import de.omegazirkel.risingworld.wallet.WalletBalance;
+import de.omegazirkel.risingworld.wallet.WalletCurrenciesResult;
 import de.omegazirkel.risingworld.wallet.WalletCurrencyResult;
 import de.omegazirkel.risingworld.wallet.WalletDatabase;
 import de.omegazirkel.risingworld.wallet.WalletPluginInfoStatusProvider;
@@ -295,6 +296,15 @@ public class Wallet extends Plugin implements Listener, FileChangeListener {
                     "Wallet database is not available.");
         }
         return walletService.defaultCurrency();
+    }
+
+    public WalletCurrenciesResult listCurrencies() {
+        if (walletService == null) {
+            return WalletCurrenciesResult.failure(
+                    de.omegazirkel.risingworld.wallet.WalletErrorCode.DATABASE_ERROR,
+                    "Wallet database is not available.");
+        }
+        return walletService.listCurrencies();
     }
 
     public WalletTransactionResult depositDefault(int playerDbId, long value, String reason, String pluginIdentifier) {

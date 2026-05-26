@@ -1,5 +1,6 @@
 # Roadmaps
 
+- [Roadmap Plan 03 Wallet Bridge API](roadmap-plan-03-wallet-bridge-api.md)
 - [Roadmap Plan 02 Plugin Standardization](roadmap-plan-02-plugin-standardization.md)
 - [Wallet Roadmap Plan 01](wallet-roadmap-plan-01.md)
 
