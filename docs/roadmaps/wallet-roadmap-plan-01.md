@@ -22,7 +22,7 @@ Supporting repositories:
 - Admin top-20 should use the shared player lookup helper and fall back to database ids for unknown players.
 
 ## Work Packages
-- [ ] Package 1: Adopt shared Tools settings reload/admin settings tab metadata after the Tools baseline exists.
+- [x] Package 1: Adopt shared Tools settings reload/admin settings tab metadata after the Tools baseline exists.
 - [x] Package 2: Add admin-only `Spielervermoegen` tab or adapt existing admin balance tab to list the top 20 richest players by standard currency.
 - [x] Package 3: Add inventory wallet display for up to five currencies sorted by descending balance.
 - [x] Package 4: Keep default-currency display compact when only one currency exists.

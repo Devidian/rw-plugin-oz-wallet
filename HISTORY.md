@@ -4,6 +4,11 @@
 
 ## [unreleased]
 
+## [0.4.0] - 2026-06-08 | Admin wallet overview
+
+- feat: add Wallet player shortcut visibility setting for `/ozt` and inventory shortcuts
+- change: remove obsolete shared escape-close registration pending future API support
+
 ## [0.3.0] - 2026-05-26 | Wallet bridge and status panel
 
 - feat: expose public Wallet currency-list API for sibling plugin dropdowns and bridge integrations

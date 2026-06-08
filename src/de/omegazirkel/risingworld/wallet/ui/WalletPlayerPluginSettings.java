@@ -5,6 +5,7 @@ import de.omegazirkel.risingworld.tools.I18n;
 import de.omegazirkel.risingworld.tools.ui.BasePlayerPluginSettingsPanel;
 import de.omegazirkel.risingworld.tools.ui.OZUIElement;
 import de.omegazirkel.risingworld.tools.ui.PlayerPluginSettings;
+import de.omegazirkel.risingworld.tools.ui.PluginShortcutVisibility;
 import net.risingworld.api.objects.Player;
 
 public class WalletPlayerPluginSettings extends PlayerPluginSettings {
@@ -25,7 +26,21 @@ public class WalletPlayerPluginSettings extends PlayerPluginSettings {
             @Override
             protected void redrawContent() {
                 flexWrapper.removeAllChilds();
+                flexWrapper.addChild(shortcutSetting(uiPlayer));
                 flexWrapper.addChild(playerSettingShowWalletHud(uiPlayer));
+            }
+
+            protected OZUIElement shortcutSetting(Player uiPlayer) {
+                OZUIElement element = defaultSettingsContainer();
+                element.addChild(defaultSettingsLabel(t().get("TC_LABEL_WALLET_SHORTCUT", uiPlayer)));
+                boolean visible = shortcutVisible(uiPlayer);
+                element.addChild(switchButtons(uiPlayer, visible, event -> {
+                    if (Wallet.playerSettings() != null) {
+                        Wallet.playerSettings().setBoolean(uiPlayer.getDbID(), shortcutKey(), !visible);
+                    }
+                    redrawContent();
+                }));
+                return element;
             }
 
             protected OZUIElement playerSettingShowWalletHud(Player uiPlayer) {
@@ -47,5 +62,14 @@ public class WalletPlayerPluginSettings extends PlayerPluginSettings {
                 return element;
             }
         };
+    }
+
+    public static boolean shortcutVisible(Player player) {
+        return Wallet.playerSettings() == null
+                || Wallet.playerSettings().getBoolean(player.getDbID(), shortcutKey()).orElse(true);
+    }
+
+    private static String shortcutKey() {
+        return PluginShortcutVisibility.playerSettingKey(Wallet.name);
     }
 }

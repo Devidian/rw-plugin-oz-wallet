@@ -18,6 +18,7 @@ import de.omegazirkel.risingworld.tools.ui.MenuItem;
 import de.omegazirkel.risingworld.tools.ui.PlayerPluginSettingsOverlay;
 import de.omegazirkel.risingworld.tools.ui.PluginInfoStatusProviders;
 import de.omegazirkel.risingworld.tools.ui.PluginMenuManager;
+import de.omegazirkel.risingworld.tools.ui.PluginShortcutVisibility;
 import de.omegazirkel.risingworld.wallet.PluginGUI;
 import de.omegazirkel.risingworld.wallet.PluginSettings;
 import de.omegazirkel.risingworld.wallet.WalletBalanceResult;
@@ -82,7 +83,8 @@ public class Wallet extends Plugin implements Listener, FileChangeListener {
         }
 
         gui = PluginGUI.getInstance(this, walletService);
-        PluginMenuManager.registerPluginMenu(new MenuItem(AssetManager.getIcon("icon-ki-oz-wallet"), "Wallet", p -> {
+        PluginShortcutVisibility.register(name, WalletPlayerPluginSettings::shortcutVisible);
+        PluginMenuManager.registerPluginMenu(new MenuItem(name, AssetManager.getIcon("icon-ki-oz-wallet"), "Wallet", p -> {
             p.hideRadialMenu(true);
             gui.openWallet(p);
         }));
@@ -98,6 +100,7 @@ public class Wallet extends Plugin implements Listener, FileChangeListener {
     @Override
     public void onDisable() {
         if (name != null) {
+            PluginShortcutVisibility.unregister(name);
             PluginInfoStatusProviders.unregisterProvider(name);
         }
         for (Player player : Server.getAllPlayers()) {
