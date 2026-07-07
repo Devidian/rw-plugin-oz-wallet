@@ -84,7 +84,7 @@ public class Wallet extends Plugin implements Listener, FileChangeListener {
 
         gui = PluginGUI.getInstance(this, walletService);
         PluginShortcutVisibility.register(name, WalletPlayerPluginSettings::shortcutVisible);
-        PluginMenuManager.registerPluginMenu(new MenuItem(name, AssetManager.getIcon("icon-ki-oz-wallet"), "Wallet", p -> {
+        PluginMenuManager.registerPluginMenu(new MenuItem(name, "icon-ki-oz-wallet", "Wallet", p -> {
             p.hideRadialMenu(true);
             gui.openWallet(p);
         }));
@@ -365,6 +365,7 @@ public class Wallet extends Plugin implements Listener, FileChangeListener {
         }
 
         WalletCurrencyHud hud = new WalletCurrencyHud(
+                player,
                 t.get("TC_WALLET_INVENTORY_PANEL_TITLE", player),
                 balances);
         player.addUIElement(hud, UITarget.Inventory);

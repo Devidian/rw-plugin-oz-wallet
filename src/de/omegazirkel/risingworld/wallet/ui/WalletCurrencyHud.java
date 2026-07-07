@@ -6,6 +6,7 @@ import de.omegazirkel.risingworld.tools.ui.AssetManager;
 import de.omegazirkel.risingworld.tools.ui.OZUIElement;
 import de.omegazirkel.risingworld.wallet.WalletBalance;
 import de.omegazirkel.risingworld.wallet.WalletCurrency;
+import net.risingworld.api.objects.Player;
 import net.risingworld.api.ui.UILabel;
 import net.risingworld.api.ui.UIScrollView;
 import net.risingworld.api.ui.UIScrollView.ScrollViewMode;
@@ -27,8 +28,10 @@ public class WalletCurrencyHud extends OZUIElement {
 
     private final OZUIElement rows;
     private final UIScrollView scrollView;
+    private final Player player;
 
-    public WalletCurrencyHud(String titleText, List<WalletBalance> balances) {
+    public WalletCurrencyHud(Player player, String titleText, List<WalletBalance> balances) {
+        this.player = player;
         setPivot(Pivot.UpperLeft);
         style.position.set(Position.Absolute);
         style.left.set(78, Unit.Percent);
@@ -114,7 +117,7 @@ public class WalletCurrencyHud extends OZUIElement {
         icon.style.top.set(7, Unit.Pixel);
         icon.style.width.set(ICON_SIZE, Unit.Pixel);
         icon.style.height.set(ICON_SIZE, Unit.Pixel);
-        icon.style.backgroundImage.set(AssetManager.getIcon(currency.getIconKey()));
+        icon.style.backgroundImage.set(AssetManager.getIcon(player, currency.getIconKey()));
         icon.style.backgroundImageScaleMode.set(ScaleMode.ScaleToFit);
         row.addChild(icon);
 

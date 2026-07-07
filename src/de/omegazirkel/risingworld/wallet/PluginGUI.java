@@ -479,7 +479,7 @@ public class PluginGUI {
             icon.setPivot(Pivot.UpperLeft);
             icon.setPosition(16, 18, false);
             icon.setSize(54, 54, false);
-            icon.style.backgroundImage.set(AssetManager.getIcon(currency.getIconKey()));
+            icon.style.backgroundImage.set(AssetManager.getIcon(uiPlayer, currency.getIconKey()));
             icon.style.backgroundImageScaleMode.set(ScaleMode.ScaleToFit);
             card.addChild(icon);
 
