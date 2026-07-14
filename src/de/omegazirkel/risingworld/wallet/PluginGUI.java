@@ -46,8 +46,8 @@ public class PluginGUI {
     private Wallet plugin;
     private WalletService service;
 
-    public static final List<String> builtInIcons = Arrays.asList("icon-ki-coin-default", "icon-ki-coin-omega-silver",
-            "icon-ki-coin-omega-gold", "icon-ki-oz-wallet");
+    public static final List<String> builtInIcons = Arrays.asList("coin-default", "coin-omega-silver",
+            "coin-omega-gold", "oz-wallet");
 
     private PluginGUI() {
     }

@@ -2,7 +2,9 @@
 
 <https://www.conventionalcommits.org/en/v1.0.0/>
 
-## [unreleased]
+## [0.4.1] - 2026-07-14 | Icon set polish
+
+- change: rename wallet and currency icon keys to their final semantic names
 
 ## [0.4.0] - 2026-06-08 | Admin wallet overview
 

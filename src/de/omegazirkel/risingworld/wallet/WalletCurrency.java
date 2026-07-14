@@ -33,7 +33,7 @@ public class WalletCurrency {
 
     public String getIconKey() {
         if (iconKey == null)
-            return "icon-ki-coin-default";
+            return "coin-default";
         return iconKey;
     }
 

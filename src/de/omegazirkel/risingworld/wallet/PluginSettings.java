@@ -22,7 +22,7 @@ public class PluginSettings {
 
     public String defaultCurrencyIdentifier = "OZC";
     public String defaultCurrencyName = "Omega Zirkel Coin";
-    public String defaultCurrencyIcon = "icon-ki-coin-omega-gold";
+    public String defaultCurrencyIcon = "coin-omega-gold";
     public String walletCommand = "wallet";
     public boolean enableWelcomeMessage = false;
     public boolean welcomeBonusEnabled = true;
@@ -139,7 +139,7 @@ public class PluginSettings {
                 entry("defaultCurrency.name", "Currency name", "Display name for the default Wallet currency.",
                         defaultCurrencyName, "Omega Zirkel Coin", AdminSettingsType.STRING),
                 entry("defaultCurrency.icon", "Currency icon", "Asset icon used for the default Wallet currency.",
-                        defaultCurrencyIcon, "icon-ki-coin-omega-gold", AdminSettingsType.STRING),
+                        defaultCurrencyIcon, "coin-omega-gold", AdminSettingsType.STRING),
                 AdminSettingsEntry.group("welcomeBonus", "Welcome bonus", "First-join Wallet bonus behavior."),
                 entry("welcomeBonus.enabled", "Welcome bonus", "Enables the first-join welcome bonus.",
                         welcomeBonusEnabled, "true", AdminSettingsType.BOOLEAN),

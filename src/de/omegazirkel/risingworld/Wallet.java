@@ -84,7 +84,7 @@ public class Wallet extends Plugin implements Listener, FileChangeListener {
 
         gui = PluginGUI.getInstance(this, walletService);
         PluginShortcutVisibility.register(name, WalletPlayerPluginSettings::shortcutVisible);
-        PluginMenuManager.registerPluginMenu(new MenuItem(name, "icon-ki-oz-wallet", "Wallet", p -> {
+        PluginMenuManager.registerPluginMenu(new MenuItem(name, "oz-wallet", "Wallet", p -> {
             p.hideRadialMenu(true);
             gui.openWallet(p);
         }));

@@ -24,7 +24,7 @@ The plugin copies `settings.default.properties` to `settings.properties` on firs
 ```properties
 defaultCurrency.identifier=OZC
 defaultCurrency.name=Omega Zirkel Coin
-defaultCurrency.icon=icon-ki-coin-omega-gold
+defaultCurrency.icon=coin-omega-gold
 walletCommand=wallet
 sendPluginWelcome=false
 welcomeBonus.enabled=true
