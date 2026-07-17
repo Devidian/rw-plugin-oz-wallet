@@ -67,6 +67,16 @@ public WalletTransactionResult withdraw(
     String pluginIdentifier
 );
 
+public WalletTransferResult transferIdempotent(
+    int payerDbId,
+    int payeeDbId,
+    long value,
+    String reason,
+    String currencyIdentifier,
+    String pluginIdentifier,
+    String correlationId
+);
+
 public WalletBalanceResult balance(
     int playerDbId,
     String currencyIdentifier
@@ -98,6 +108,12 @@ public WalletBalanceResult balanceDefault(
 ```
 
 Currency identifiers are trimmed and normalized to uppercase. Amounts are whole-number positive `long` values. Unknown currencies return `UNKNOWN_CURRENCY`, invalid inputs return `INVALID_ARGUMENT`, duplicate currency identifiers from another plugin return `CURRENCY_ALREADY_REGISTERED`, and withdrawals never allow negative balances. The `*Default` convenience methods use the configured default currency.
+
+`transferIdempotent` debits the payer and credits the payee in a single Wallet
+SQLite transaction. Its non-empty correlation ID is immutable: exact retries
+return the original transfer, while reusing the ID with a changed request
+returns `IDEMPOTENCY_CONFLICT`. Cross-plugin sagas such as mail COD must use
+this method instead of paired `withdraw`/`deposit` calls.
 
 `listCurrencies()` returns `WalletCurrenciesResult` with public fields `success`, `errorCode`, `message`, and `currencies`. Each `WalletCurrency` exposes `getIdentifier()`, `getName()`, `getIconKey()`, `getPluginIdentifier()`, `getRegisteredAt()`, and `isDefaultCurrency()`. The list is ordered with the default currency first, then by currency identifier.
 

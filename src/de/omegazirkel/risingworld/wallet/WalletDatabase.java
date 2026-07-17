@@ -12,7 +12,7 @@ import java.util.Optional;
 import de.omegazirkel.risingworld.Wallet;
 
 public class WalletDatabase {
-    private static final int SCHEMA_VERSION = 1;
+    private static final int SCHEMA_VERSION = 2;
 
     private final Connection connection;
 
@@ -55,6 +55,23 @@ public class WalletDatabase {
                         reason TEXT NOT NULL,
                         created_at BIGINT NOT NULL,
                         FOREIGN KEY (currency_identifier) REFERENCES wallet_currencies(identifier)
+                    );
+                    """);
+            statement.execute("""
+                    CREATE TABLE IF NOT EXISTS wallet_transfers (
+                        correlation_id TEXT PRIMARY KEY,
+                        payer_db_id INTEGER NOT NULL,
+                        payee_db_id INTEGER NOT NULL,
+                        currency_identifier TEXT NOT NULL,
+                        amount BIGINT NOT NULL,
+                        debit_transaction_id INTEGER NOT NULL,
+                        credit_transaction_id INTEGER NOT NULL,
+                        source_plugin TEXT NOT NULL,
+                        reason TEXT NOT NULL,
+                        created_at BIGINT NOT NULL,
+                        FOREIGN KEY (currency_identifier) REFERENCES wallet_currencies(identifier),
+                        FOREIGN KEY (debit_transaction_id) REFERENCES wallet_transactions(id),
+                        FOREIGN KEY (credit_transaction_id) REFERENCES wallet_transactions(id)
                     );
                     """);
             statement.execute("""
@@ -293,6 +310,88 @@ public class WalletDatabase {
         }
     }
 
+    /**
+     * Moves funds between two accounts in one SQLite transaction. A correlation
+     * ID is immutable: an exact retry returns the original transfer, while a
+     * changed request with the same ID is rejected.
+     */
+    public synchronized WalletTransfer transferIdempotent(int payerDbId, int payeeDbId, WalletCurrency currency,
+            long amount, String pluginIdentifier, String reason, String correlationId)
+            throws SQLException, InsufficientFundsException, IdempotencyConflictException {
+        Optional<WalletTransfer> existing = findTransfer(correlationId);
+        if (existing.isPresent()) {
+            WalletTransfer transfer = existing.get();
+            if (transfer.getPayerDbId() == payerDbId && transfer.getPayeeDbId() == payeeDbId
+                    && transfer.getCurrency().getIdentifier().equals(currency.getIdentifier())
+                    && transfer.getAmount() == amount && transfer.getPluginIdentifier().equals(pluginIdentifier)
+                    && transfer.getReason().equals(reason)) return transfer;
+            throw new IdempotencyConflictException();
+        }
+        boolean previousAutoCommit = connection.getAutoCommit();
+        connection.setAutoCommit(false);
+        try {
+            long payerBalance = getBalance(payerDbId, currency.getIdentifier());
+            long payeeBalance = getBalance(payeeDbId, currency.getIdentifier());
+            long payerResult = Math.subtractExact(payerBalance, amount);
+            long payeeResult = Math.addExact(payeeBalance, amount);
+            if (payerResult < 0) throw new InsufficientFundsException();
+            long now = now();
+            upsertBalance(payerDbId, currency.getIdentifier(), payerResult, now);
+            upsertBalance(payeeDbId, currency.getIdentifier(), payeeResult, now);
+            long debitId = insertTransaction(payerDbId, currency.getIdentifier(), -amount, payerResult,
+                    pluginIdentifier, reason, now);
+            long creditId = insertTransaction(payeeDbId, currency.getIdentifier(), amount, payeeResult,
+                    pluginIdentifier, reason, now);
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    INSERT INTO wallet_transfers(correlation_id, payer_db_id, payee_db_id, currency_identifier, amount,
+                        debit_transaction_id, credit_transaction_id, source_plugin, reason, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """)) {
+                statement.setString(1, correlationId);
+                statement.setInt(2, payerDbId);
+                statement.setInt(3, payeeDbId);
+                statement.setString(4, currency.getIdentifier());
+                statement.setLong(5, amount);
+                statement.setLong(6, debitId);
+                statement.setLong(7, creditId);
+                statement.setString(8, pluginIdentifier);
+                statement.setString(9, reason);
+                statement.setLong(10, now);
+                statement.executeUpdate();
+            }
+            connection.commit();
+            return new WalletTransfer(correlationId, payerDbId, payeeDbId, currency, amount, debitId, creditId,
+                    pluginIdentifier, reason, now);
+        } catch (SQLException | RuntimeException | InsufficientFundsException ex) {
+            rollbackQuietly();
+            throw ex;
+        } finally {
+            connection.setAutoCommit(previousAutoCommit);
+        }
+    }
+
+    public Optional<WalletTransfer> findTransfer(String correlationId) throws SQLException {
+        if (correlationId == null || correlationId.isBlank()) return Optional.empty();
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT transfer.correlation_id, transfer.payer_db_id, transfer.payee_db_id, transfer.amount,
+                    transfer.debit_transaction_id, transfer.credit_transaction_id, transfer.source_plugin,
+                    transfer.reason, transfer.created_at, currency.identifier, currency.name, currency.icon,
+                    currency.source_plugin AS currency_source_plugin, currency.registered_at, currency.is_default
+                FROM wallet_transfers transfer JOIN wallet_currencies currency
+                    ON currency.identifier = transfer.currency_identifier
+                WHERE transfer.correlation_id = ?
+                """)) {
+            statement.setString(1, correlationId);
+            try (ResultSet result = statement.executeQuery()) {
+                if (!result.next()) return Optional.empty();
+                return Optional.of(new WalletTransfer(result.getString("correlation_id"), result.getInt("payer_db_id"),
+                        result.getInt("payee_db_id"), readCurrency(result), result.getLong("amount"),
+                        result.getLong("debit_transaction_id"), result.getLong("credit_transaction_id"),
+                        result.getString("source_plugin"), result.getString("reason"), result.getLong("created_at")));
+            }
+        }
+    }
+
     public List<WalletTransaction> listLatestTransactions(int playerDbId, int limit) throws SQLException {
         String sql = """
                 SELECT t.id, t.player_db_id, t.delta, t.resulting_balance, t.source_plugin, t.reason, t.created_at,
@@ -450,6 +549,10 @@ public class WalletDatabase {
     }
 
     public static class InsufficientFundsException extends Exception {
+        private static final long serialVersionUID = 1L;
+    }
+
+    public static class IdempotencyConflictException extends Exception {
         private static final long serialVersionUID = 1L;
     }
 }

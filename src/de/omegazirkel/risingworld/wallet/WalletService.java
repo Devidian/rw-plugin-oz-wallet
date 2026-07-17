@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import de.omegazirkel.risingworld.Wallet;
 import de.omegazirkel.risingworld.wallet.WalletDatabase.InsufficientFundsException;
+import de.omegazirkel.risingworld.wallet.WalletDatabase.IdempotencyConflictException;
 
 public class WalletService {
     public static final int MAX_REASON_LENGTH = 255;
@@ -117,6 +118,43 @@ public class WalletService {
         }
     }
 
+    public WalletTransferResult transferIdempotent(int payerDbId, int payeeDbId, long amount, String reason,
+            String currencyIdentifier, String pluginIdentifier, String correlationId) {
+        if (payerDbId <= 0 || payeeDbId <= 0 || payerDbId == payeeDbId || amount <= 0) {
+            return WalletTransferResult.failure(WalletErrorCode.INVALID_ARGUMENT,
+                    "Payer and payee must differ and amount must be positive.");
+        }
+        String normalizedIdentifier = normalizeCurrencyIdentifier(currencyIdentifier);
+        String normalizedPluginIdentifier = normalizeRequired(pluginIdentifier);
+        String normalizedReason = normalizeReason(reason);
+        String normalizedCorrelationId = normalizeCorrelationId(correlationId);
+        if (normalizedIdentifier == null || normalizedPluginIdentifier == null || normalizedReason == null
+                || normalizedCorrelationId == null) {
+            return WalletTransferResult.failure(WalletErrorCode.INVALID_ARGUMENT,
+                    "Currency, plugin, reason, and correlation id are required.");
+        }
+        try {
+            Optional<WalletCurrency> currency = database.findCurrency(normalizedIdentifier);
+            if (currency.isEmpty()) {
+                return WalletTransferResult.failure(WalletErrorCode.UNKNOWN_CURRENCY, "Currency is not registered.");
+            }
+            return WalletTransferResult.success(database.transferIdempotent(payerDbId, payeeDbId, currency.get(), amount,
+                    normalizedPluginIdentifier, normalizedReason, normalizedCorrelationId));
+        } catch (InsufficientFundsException ex) {
+            return WalletTransferResult.failure(WalletErrorCode.INSUFFICIENT_FUNDS,
+                    "Wallet balance is too low for this transfer.");
+        } catch (IdempotencyConflictException ex) {
+            return WalletTransferResult.failure(WalletErrorCode.IDEMPOTENCY_CONFLICT,
+                    "Correlation id is already bound to another transfer.");
+        } catch (ArithmeticException ex) {
+            return WalletTransferResult.failure(WalletErrorCode.INVALID_ARGUMENT,
+                    "Wallet transfer amount exceeds supported balance range.");
+        } catch (SQLException ex) {
+            Wallet.logger().error("transferIdempotent failed: " + ex.getMessage());
+            return WalletTransferResult.failure(WalletErrorCode.DATABASE_ERROR, "Wallet transfer failed.");
+        }
+    }
+
     public String defaultCurrencyIdentifier() {
         return defaultCurrencyIdentifier;
     }
@@ -217,6 +255,11 @@ public class WalletService {
             return null;
         }
         return normalized.length() <= MAX_REASON_LENGTH ? normalized : normalized.substring(0, MAX_REASON_LENGTH);
+    }
+
+    private static String normalizeCorrelationId(String correlationId) {
+        String normalized = normalizeRequired(correlationId);
+        return normalized == null || normalized.length() > 255 ? null : normalized;
     }
 
     private static String normalizeRequired(String value) {

@@ -29,6 +29,7 @@ import de.omegazirkel.risingworld.wallet.WalletDatabase;
 import de.omegazirkel.risingworld.wallet.WalletPluginInfoStatusProvider;
 import de.omegazirkel.risingworld.wallet.WalletService;
 import de.omegazirkel.risingworld.wallet.WalletTransactionResult;
+import de.omegazirkel.risingworld.wallet.WalletTransferResult;
 import de.omegazirkel.risingworld.wallet.ui.WalletCurrencyHud;
 import de.omegazirkel.risingworld.wallet.ui.WalletPlayerPluginData;
 import de.omegazirkel.risingworld.wallet.ui.WalletPlayerPluginSettings;
@@ -271,6 +272,29 @@ public class Wallet extends Plugin implements Listener, FileChangeListener {
         return result;
     }
 
+    /** Public v1 atomic, idempotent transfer contract for cross-plugin sagas. */
+    public WalletTransferResult transferIdempotent(
+            int payerDbId,
+            int payeeDbId,
+            long value,
+            String reason,
+            String currencyIdentifier,
+            String pluginIdentifier,
+            String correlationId) {
+        if (walletService == null) {
+            return WalletTransferResult.failure(
+                    de.omegazirkel.risingworld.wallet.WalletErrorCode.DATABASE_ERROR,
+                    "Wallet database is not available.");
+        }
+        WalletTransferResult result = walletService.transferIdempotent(payerDbId, payeeDbId, value, reason,
+                currencyIdentifier, pluginIdentifier, correlationId);
+        if (result.success) {
+            refreshOnlineWalletHud(payerDbId);
+            refreshOnlineWalletHud(payeeDbId);
+        }
+        return result;
+    }
+
     public WalletBalanceResult balance(int playerDbId, String currencyIdentifier) {
         if (walletService == null) {
             return WalletBalanceResult.failure(
@@ -387,7 +411,10 @@ public class Wallet extends Plugin implements Listener, FileChangeListener {
         if (!result.success) {
             return;
         }
+        refreshOnlineWalletHud(playerDbId);
+    }
 
+    private static void refreshOnlineWalletHud(int playerDbId) {
         Player player = Server.getPlayerByDbID(playerDbId);
         if (player != null && player.isConnected() && player.isSpawned() && isWalletHudEnabled(player)) {
             syncWalletHud(player);

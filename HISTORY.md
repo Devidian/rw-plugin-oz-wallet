@@ -2,6 +2,10 @@
 
 <https://www.conventionalcommits.org/en/v1.0.0/>
 
+## [0.4.2] - 2026-07-16 | Idempotent transfer contract
+
+- feat: add public atomic, idempotent Wallet transfers for cross-plugin sagas
+
 ## [0.4.1] - 2026-07-14 | Icon set polish
 
 - change: rename wallet and currency icon keys to their final semantic names
