@@ -2,6 +2,10 @@
 
 <https://www.conventionalcommits.org/en/v1.0.0/>
 
+## [0.4.4] - 2026-07-20 | Advanced button controls
+
+- change: update the shared OZ Tools UI dependency to the stable button controls
+
 ## [0.4.3] - 2026-07-20 | Update metadata
 
 - change: publish the canonical GitHub release source for OZ Tools update management
