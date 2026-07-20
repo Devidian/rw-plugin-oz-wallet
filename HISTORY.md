@@ -2,6 +2,10 @@
 
 <https://www.conventionalcommits.org/en/v1.0.0/>
 
+## [0.4.5] - 2026-07-20 | Shared wallet overlay
+
+- refactor: move the Wallet overlay into its own shared-base implementation with consistent tabs and controls
+
 ## [0.4.4] - 2026-07-20 | Advanced button controls
 
 - change: update the shared OZ Tools UI dependency to the stable button controls
