@@ -165,7 +165,7 @@ public class Wallet extends Plugin implements Listener, FileChangeListener {
         syncWalletHud(player);
 
         if (s.enableWelcomeMessage) {
-            String lang = player.getSystemLanguage();
+            String lang = de.omegazirkel.risingworld.OZTools.getPlayerLanguage(player);
             player.sendTextMessage(t.get("TC_MSG_PLUGIN_WELCOME", lang)
                     .replace("PH_PLUGIN_NAME", getDescription("name"))
                     .replace("PH_PLUGIN_CMD", s.walletCommand)
@@ -215,7 +215,7 @@ public class Wallet extends Plugin implements Listener, FileChangeListener {
             return;
         }
 
-        String lang = player.getSystemLanguage();
+        String lang = de.omegazirkel.risingworld.OZTools.getPlayerLanguage(player);
         player.sendTextMessage(t.get("TC_WALLET_WELCOME_BONUS_GRANTED", lang)
                 .replace("PH_AMOUNT", Long.toString(s.welcomeBonusAmount))
                 .replace("PH_CURRENCY", defaultCurrencyIdentifier()));
