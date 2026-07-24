@@ -2,6 +2,13 @@
 
 <https://www.conventionalcommits.org/en/v1.0.0/>
 
+## Unreleased
+
+## [0.4.7] - 2026-07-24 | Runtime architecture
+
+- refactor: keep the plugin entry point limited to lifecycle wiring and event delegation
+- change: update the shared OZ Tools dependency to version 0.23.8
+
 ## [0.4.5] - 2026-07-20 | Shared wallet overlay
 
 - refactor: move the Wallet overlay into its own shared-base implementation with consistent tabs and controls
