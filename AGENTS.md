@@ -33,6 +33,10 @@ Does not own:
 - Treat API result objects and the four public main-class methods as the compatibility surface for sibling plugins.
 - Do not expose `WalletService` or database internals as public integration API.
 - Keep `README.md`, `HISTORY.md`, and `PLANS.md` aligned with behavior changes.
+- Keep the `plugin.yml` entry class as the sole Rising World `Listener` and sole
+  `registerEventListener(...)` target. It may only wire lifecycle, delegate
+  events/settings, and expose thin compatibility facades; feature workflows,
+  persistence, UI, integrations, and timers belong in thematic classes.
 
 ## Validation
 
