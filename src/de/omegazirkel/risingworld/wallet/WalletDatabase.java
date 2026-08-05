@@ -12,7 +12,7 @@ import java.util.Optional;
 import de.omegazirkel.risingworld.Wallet;
 
 public class WalletDatabase {
-    private static final int SCHEMA_VERSION = 2;
+    private static final int SCHEMA_VERSION = 3;
 
     private final Connection connection;
 
@@ -78,8 +78,198 @@ public class WalletDatabase {
                     CREATE INDEX IF NOT EXISTS idx_wallet_transactions_player_created
                     ON wallet_transactions (player_db_id, created_at DESC, id DESC);
                     """);
+            statement.execute("""
+                    CREATE TABLE IF NOT EXISTS wallet_system_accounts (
+                        account_id TEXT PRIMARY KEY,
+                        owner_plugin TEXT NOT NULL,
+                        account_type TEXT NOT NULL,
+                        display_name TEXT NOT NULL,
+                        status TEXT NOT NULL,
+                        created_at BIGINT NOT NULL,
+                        updated_at BIGINT NOT NULL
+                    );
+                    """);
+            statement.execute("""
+                    CREATE TABLE IF NOT EXISTS wallet_system_balances (
+                        account_id TEXT NOT NULL,
+                        currency_identifier TEXT NOT NULL,
+                        balance BIGINT NOT NULL,
+                        updated_at BIGINT NOT NULL,
+                        PRIMARY KEY (account_id, currency_identifier),
+                        FOREIGN KEY (account_id) REFERENCES wallet_system_accounts(account_id),
+                        FOREIGN KEY (currency_identifier) REFERENCES wallet_currencies(identifier)
+                    );
+                    """);
+            statement.execute("""
+                    CREATE TABLE IF NOT EXISTS wallet_system_transactions (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        account_id TEXT NOT NULL,
+                        currency_identifier TEXT NOT NULL,
+                        delta BIGINT NOT NULL,
+                        resulting_balance BIGINT NOT NULL,
+                        source_plugin TEXT NOT NULL,
+                        reason TEXT NOT NULL,
+                        created_at BIGINT NOT NULL,
+                        FOREIGN KEY (account_id) REFERENCES wallet_system_accounts(account_id),
+                        FOREIGN KEY (currency_identifier) REFERENCES wallet_currencies(identifier)
+                    );
+                    """);
+            statement.execute("""
+                    CREATE TABLE IF NOT EXISTS wallet_account_transfers (
+                        correlation_id TEXT PRIMARY KEY,
+                        payer_kind TEXT NOT NULL,
+                        payer_reference TEXT NOT NULL,
+                        payee_kind TEXT NOT NULL,
+                        payee_reference TEXT NOT NULL,
+                        currency_identifier TEXT NOT NULL,
+                        amount BIGINT NOT NULL,
+                        debit_transaction_id BIGINT NOT NULL,
+                        credit_transaction_id BIGINT NOT NULL,
+                        source_plugin TEXT NOT NULL,
+                        reason TEXT NOT NULL,
+                        created_at BIGINT NOT NULL,
+                        FOREIGN KEY (currency_identifier) REFERENCES wallet_currencies(identifier)
+                    );
+                    """);
+            statement.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_wallet_system_accounts_created
+                    ON wallet_system_accounts (created_at DESC, account_id ASC);
+                    """);
+            statement.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_wallet_system_transactions_account_created
+                    ON wallet_system_transactions (account_id, created_at DESC, id DESC);
+                    """);
             statement.execute("PRAGMA user_version = " + SCHEMA_VERSION + ";");
         }
+    }
+
+    public SystemAccount insertSystemAccount(String accountId, String ownerPlugin, String accountType,
+            String displayName) throws SQLException {
+        long now = now();
+        try (PreparedStatement statement = connection.prepareStatement("""
+                INSERT INTO wallet_system_accounts(
+                    account_id, owner_plugin, account_type, display_name, status, created_at, updated_at)
+                VALUES (?, ?, ?, ?, 'ACTIVE', ?, ?)
+                """)) {
+            statement.setString(1, accountId);
+            statement.setString(2, ownerPlugin);
+            statement.setString(3, accountType);
+            statement.setString(4, displayName);
+            statement.setLong(5, now);
+            statement.setLong(6, now);
+            statement.executeUpdate();
+        }
+        return findSystemAccount(accountId).orElseThrow();
+    }
+
+    public Optional<SystemAccount> findSystemAccount(String accountId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT account_id, owner_plugin, account_type, display_name, status, created_at, updated_at
+                FROM wallet_system_accounts WHERE account_id = ?
+                """)) {
+            statement.setString(1, accountId);
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next() ? Optional.of(readSystemAccount(result)) : Optional.empty();
+            }
+        }
+    }
+
+    public List<SystemAccount> listSystemAccounts(String search, int offset, int limit) throws SQLException {
+        boolean filtered = search != null && !search.isBlank();
+        String sql = """
+                SELECT account_id, owner_plugin, account_type, display_name, status, created_at, updated_at
+                FROM wallet_system_accounts
+                """ + (filtered ? "WHERE lower(account_id) LIKE ? OR lower(display_name) LIKE ? " : "")
+                + "ORDER BY created_at DESC, account_id ASC LIMIT ? OFFSET ?";
+        List<SystemAccount> accounts = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            int index = 1;
+            if (filtered) {
+                String pattern = "%" + search.toLowerCase(java.util.Locale.ROOT) + "%";
+                statement.setString(index++, pattern);
+                statement.setString(index++, pattern);
+            }
+            statement.setInt(index++, limit);
+            statement.setInt(index, offset);
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) accounts.add(readSystemAccount(result));
+            }
+        }
+        return accounts;
+    }
+
+    public int countSystemAccounts(String search) throws SQLException {
+        boolean filtered = search != null && !search.isBlank();
+        String sql = "SELECT COUNT(*) FROM wallet_system_accounts"
+                + (filtered ? " WHERE lower(account_id) LIKE ? OR lower(display_name) LIKE ?" : "");
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            if (filtered) {
+                String pattern = "%" + search.toLowerCase(java.util.Locale.ROOT) + "%";
+                statement.setString(1, pattern);
+                statement.setString(2, pattern);
+            }
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next() ? result.getInt(1) : 0;
+            }
+        }
+    }
+
+    public void archiveSystemAccount(String accountId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                UPDATE wallet_system_accounts SET status = 'ARCHIVED', updated_at = ?
+                WHERE account_id = ? AND status = 'ACTIVE'
+                """)) {
+            statement.setLong(1, now());
+            statement.setString(2, accountId);
+            statement.executeUpdate();
+        }
+    }
+
+    public void updateSystemAccountDisplayName(String accountId, String displayName) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                UPDATE wallet_system_accounts SET display_name = ?, updated_at = ?
+                WHERE account_id = ? AND status = 'ACTIVE'
+                """)) {
+            statement.setString(1, displayName);
+            statement.setLong(2, now());
+            statement.setString(3, accountId);
+            statement.executeUpdate();
+        }
+    }
+
+    public long getSystemBalance(String accountId, String currencyIdentifier) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT balance FROM wallet_system_balances
+                WHERE account_id = ? AND currency_identifier = ?
+                """)) {
+            statement.setString(1, accountId);
+            statement.setString(2, currencyIdentifier);
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next() ? result.getLong("balance") : 0L;
+            }
+        }
+    }
+
+    public List<SystemAccountBalance> listSystemBalances(String accountId) throws SQLException {
+        List<SystemAccountBalance> balances = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT balance.account_id, balance.balance, balance.updated_at,
+                    currency.identifier, currency.name, currency.icon,
+                    currency.source_plugin, currency.registered_at, currency.is_default
+                FROM wallet_system_balances balance JOIN wallet_currencies currency
+                    ON currency.identifier = balance.currency_identifier
+                WHERE balance.account_id = ?
+                ORDER BY currency.is_default DESC, currency.identifier ASC
+                """)) {
+            statement.setString(1, accountId);
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) {
+                    balances.add(new SystemAccountBalance(accountId, readCurrency(result),
+                            result.getLong("balance"), result.getLong("updated_at")));
+                }
+            }
+        }
+        return balances;
     }
 
     public WalletCurrency upsertCurrency(
@@ -385,9 +575,136 @@ public class WalletDatabase {
             try (ResultSet result = statement.executeQuery()) {
                 if (!result.next()) return Optional.empty();
                 return Optional.of(new WalletTransfer(result.getString("correlation_id"), result.getInt("payer_db_id"),
-                        result.getInt("payee_db_id"), readCurrency(result), result.getLong("amount"),
+                        result.getInt("payee_db_id"), readAliasedCurrency(result), result.getLong("amount"),
                         result.getLong("debit_transaction_id"), result.getLong("credit_transaction_id"),
                         result.getString("source_plugin"), result.getString("reason"), result.getLong("created_at")));
+            }
+        }
+    }
+
+    public synchronized AccountTransfer transferAccountIdempotent(String payerKind, String payerReference,
+            String payeeKind, String payeeReference, WalletCurrency currency, long amount, String pluginIdentifier,
+            String reason, String correlationId)
+            throws SQLException, InsufficientFundsException, IdempotencyConflictException {
+        Optional<AccountTransfer> existing = findAccountTransfer(correlationId);
+        if (existing.isPresent()) {
+            AccountTransfer transfer = existing.get();
+            if (transfer.getPayerKind().equals(payerKind)
+                    && transfer.getPayerReference().equals(payerReference)
+                    && transfer.getPayeeKind().equals(payeeKind)
+                    && transfer.getPayeeReference().equals(payeeReference)
+                    && transfer.getCurrency().getIdentifier().equals(currency.getIdentifier())
+                    && transfer.getAmount() == amount
+                    && transfer.getPluginIdentifier().equals(pluginIdentifier)
+                    && transfer.getReason().equals(reason)) return transfer;
+            throw new IdempotencyConflictException();
+        }
+
+        boolean previousAutoCommit = connection.getAutoCommit();
+        connection.setAutoCommit(false);
+        try {
+            long payerBalance = accountBalance(payerKind, payerReference, currency.getIdentifier());
+            long payeeBalance = accountBalance(payeeKind, payeeReference, currency.getIdentifier());
+            long payerResult = Math.subtractExact(payerBalance, amount);
+            long payeeResult = Math.addExact(payeeBalance, amount);
+            if (payerResult < 0) throw new InsufficientFundsException();
+
+            long now = now();
+            upsertAccountBalance(payerKind, payerReference, currency.getIdentifier(), payerResult, now);
+            upsertAccountBalance(payeeKind, payeeReference, currency.getIdentifier(), payeeResult, now);
+            long debitId = insertAccountTransaction(payerKind, payerReference, currency.getIdentifier(), -amount,
+                    payerResult, pluginIdentifier, reason, now);
+            long creditId = insertAccountTransaction(payeeKind, payeeReference, currency.getIdentifier(), amount,
+                    payeeResult, pluginIdentifier, reason, now);
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    INSERT INTO wallet_account_transfers(
+                        correlation_id, payer_kind, payer_reference, payee_kind, payee_reference,
+                        currency_identifier, amount, debit_transaction_id, credit_transaction_id,
+                        source_plugin, reason, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """)) {
+                statement.setString(1, correlationId);
+                statement.setString(2, payerKind);
+                statement.setString(3, payerReference);
+                statement.setString(4, payeeKind);
+                statement.setString(5, payeeReference);
+                statement.setString(6, currency.getIdentifier());
+                statement.setLong(7, amount);
+                statement.setLong(8, debitId);
+                statement.setLong(9, creditId);
+                statement.setString(10, pluginIdentifier);
+                statement.setString(11, reason);
+                statement.setLong(12, now);
+                statement.executeUpdate();
+            }
+            connection.commit();
+            return new AccountTransfer(correlationId, payerKind, payerReference, payeeKind, payeeReference,
+                    currency, amount, debitId, creditId, pluginIdentifier, reason, now);
+        } catch (SQLException | RuntimeException | InsufficientFundsException ex) {
+            rollbackQuietly();
+            throw ex;
+        } finally {
+            connection.setAutoCommit(previousAutoCommit);
+        }
+    }
+
+    public Optional<AccountTransfer> findAccountTransfer(String correlationId) throws SQLException {
+        if (correlationId == null || correlationId.isBlank()) return Optional.empty();
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT transfer.correlation_id, transfer.payer_kind, transfer.payer_reference,
+                    transfer.payee_kind, transfer.payee_reference, transfer.amount,
+                    transfer.debit_transaction_id, transfer.credit_transaction_id, transfer.source_plugin,
+                    transfer.reason, transfer.created_at, currency.identifier, currency.name, currency.icon,
+                    currency.source_plugin AS currency_source_plugin, currency.registered_at, currency.is_default
+                FROM wallet_account_transfers transfer JOIN wallet_currencies currency
+                    ON currency.identifier = transfer.currency_identifier
+                WHERE transfer.correlation_id = ?
+                """)) {
+            statement.setString(1, correlationId);
+            try (ResultSet result = statement.executeQuery()) {
+                if (!result.next()) return Optional.empty();
+                return Optional.of(new AccountTransfer(result.getString("correlation_id"),
+                        result.getString("payer_kind"), result.getString("payer_reference"),
+                        result.getString("payee_kind"), result.getString("payee_reference"), readAliasedCurrency(result),
+                        result.getLong("amount"), result.getLong("debit_transaction_id"),
+                        result.getLong("credit_transaction_id"), result.getString("source_plugin"),
+                        result.getString("reason"), result.getLong("created_at")));
+            }
+        }
+    }
+
+    public List<SystemAccountTransaction> listLatestSystemTransactions(String accountId, int limit)
+            throws SQLException {
+        List<SystemAccountTransaction> transactions = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT tx.id, tx.account_id, tx.delta, tx.resulting_balance, tx.source_plugin,
+                    tx.reason, tx.created_at, currency.identifier, currency.name, currency.icon,
+                    currency.source_plugin AS currency_source_plugin, currency.registered_at, currency.is_default
+                FROM wallet_system_transactions tx JOIN wallet_currencies currency
+                    ON currency.identifier = tx.currency_identifier
+                WHERE tx.account_id = ? ORDER BY tx.created_at DESC, tx.id DESC LIMIT ?
+                """)) {
+            statement.setString(1, accountId);
+            statement.setInt(2, limit);
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) {
+                    transactions.add(new SystemAccountTransaction(result.getLong("id"), accountId,
+                            readAliasedCurrency(result), result.getLong("delta"), result.getLong("resulting_balance"),
+                            result.getString("source_plugin"), result.getString("reason"),
+                            result.getLong("created_at")));
+                }
+            }
+        }
+        return transactions;
+    }
+
+    public boolean hasNonZeroSystemBalance(String accountId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT 1 FROM wallet_system_balances WHERE account_id = ? AND balance <> 0 LIMIT 1
+                """)) {
+            statement.setString(1, accountId);
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next();
             }
         }
     }
@@ -491,6 +808,60 @@ public class WalletDatabase {
         }
     }
 
+    private long accountBalance(String kind, String reference, String currencyIdentifier) throws SQLException {
+        return "PLAYER".equals(kind) ? getBalance(Integer.parseInt(reference), currencyIdentifier)
+                : getSystemBalance(reference, currencyIdentifier);
+    }
+
+    private void upsertAccountBalance(String kind, String reference, String currencyIdentifier, long balance,
+            long updatedAt) throws SQLException {
+        if ("PLAYER".equals(kind)) {
+            upsertBalance(Integer.parseInt(reference), currencyIdentifier, balance, updatedAt);
+            return;
+        }
+        try (PreparedStatement statement = connection.prepareStatement("""
+                INSERT INTO wallet_system_balances(account_id, currency_identifier, balance, updated_at)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(account_id, currency_identifier) DO UPDATE SET
+                    balance=excluded.balance, updated_at=excluded.updated_at
+                """)) {
+            statement.setString(1, reference);
+            statement.setString(2, currencyIdentifier);
+            statement.setLong(3, balance);
+            statement.setLong(4, updatedAt);
+            statement.executeUpdate();
+        }
+    }
+
+    private long insertAccountTransaction(String kind, String reference, String currencyIdentifier, long delta,
+            long resultingBalance, String pluginIdentifier, String reason, long createdAt) throws SQLException {
+        if ("PLAYER".equals(kind)) {
+            return insertTransaction(Integer.parseInt(reference), currencyIdentifier, delta, resultingBalance,
+                    pluginIdentifier, reason, createdAt);
+        }
+        try (PreparedStatement statement = connection.prepareStatement("""
+                INSERT INTO wallet_system_transactions(
+                    account_id, currency_identifier, delta, resulting_balance, source_plugin, reason, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, Statement.RETURN_GENERATED_KEYS)) {
+            statement.setString(1, reference);
+            statement.setString(2, currencyIdentifier);
+            statement.setLong(3, delta);
+            statement.setLong(4, resultingBalance);
+            statement.setString(5, pluginIdentifier);
+            statement.setString(6, reason);
+            statement.setLong(7, createdAt);
+            statement.executeUpdate();
+            try (ResultSet keys = statement.getGeneratedKeys()) {
+                if (keys.next()) return keys.getLong(1);
+            }
+        }
+        try (Statement statement = connection.createStatement();
+                ResultSet result = statement.executeQuery("SELECT last_insert_rowid();")) {
+            return result.next() ? result.getLong(1) : 0L;
+        }
+    }
+
     private long insertTransaction(
             int playerDbId,
             String currencyIdentifier,
@@ -534,6 +905,22 @@ public class WalletDatabase {
                 result.getString("source_plugin"),
                 result.getLong("registered_at"),
                 result.getInt("is_default") == 1);
+    }
+
+    private WalletCurrency readAliasedCurrency(ResultSet result) throws SQLException {
+        return new WalletCurrency(
+                result.getString("identifier"),
+                result.getString("name"),
+                result.getString("icon"),
+                result.getString("currency_source_plugin"),
+                result.getLong("registered_at"),
+                result.getInt("is_default") == 1);
+    }
+
+    private SystemAccount readSystemAccount(ResultSet result) throws SQLException {
+        return new SystemAccount(result.getString("account_id"), result.getString("owner_plugin"),
+                result.getString("account_type"), result.getString("display_name"),
+                result.getString("status"), result.getLong("created_at"), result.getLong("updated_at"));
     }
 
     private long now() {

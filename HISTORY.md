@@ -2,7 +2,13 @@
 
 <https://www.conventionalcommits.org/en/v1.0.0/>
 
-## Unreleased
+## [0.4.8] - 2026-08-05 | System accounts
+
+- feat: add Wallet-owned virtual/system accounts with separate per-currency balances and audit history
+- feat: expose idempotent player-to-system, system-to-player, and system-to-system transfer APIs
+- feat: create a world revenue account and add an admin system-account overview with search and pagination
+- feat: allow owning plugins to update system-account display metadata without changing identity
+- fix: align and pad the system-account table, label its actions, and keep pagination inside the footer
 
 ## [0.4.7] - 2026-07-24 | Runtime architecture
 

@@ -17,10 +17,18 @@ import de.omegazirkel.risingworld.wallet.WalletBalance;
 import de.omegazirkel.risingworld.wallet.WalletCurrency;
 import de.omegazirkel.risingworld.wallet.WalletService;
 import de.omegazirkel.risingworld.wallet.WalletTransaction;
+import de.omegazirkel.risingworld.wallet.SystemAccount;
+import de.omegazirkel.risingworld.wallet.SystemAccountBalance;
+import de.omegazirkel.risingworld.wallet.SystemAccountBalancesResult;
+import de.omegazirkel.risingworld.wallet.SystemAccountTransaction;
+import de.omegazirkel.risingworld.wallet.SystemAccountTransactionsResult;
+import de.omegazirkel.risingworld.wallet.SystemAccountsResult;
 import de.omegazirkel.risingworld.tools.I18n;
 import de.omegazirkel.risingworld.tools.PlayerDatabaseHelper;
 import de.omegazirkel.risingworld.tools.PlayerDatabaseHelper.PlayerRecord;
 import de.omegazirkel.risingworld.tools.ui.AssetManager;
+import de.omegazirkel.risingworld.tools.ui.AdvancedButton;
+import de.omegazirkel.risingworld.tools.ui.AdvancedButtonFactory;
 import de.omegazirkel.risingworld.tools.ui.BasePluginOverlayWithTabs;
 import de.omegazirkel.risingworld.tools.ui.OZUIElement;
 import de.omegazirkel.risingworld.tools.ui.table.TableCell;
@@ -30,6 +38,7 @@ import net.risingworld.api.Server;
 import net.risingworld.api.objects.Player;
 import net.risingworld.api.ui.UILabel;
 import net.risingworld.api.ui.UIScrollView;
+import net.risingworld.api.ui.UITextField;
 import net.risingworld.api.ui.UIScrollView.ScrollViewMode;
 import net.risingworld.api.ui.style.DisplayStyle;
 import net.risingworld.api.ui.style.FlexDirection;
@@ -47,6 +56,10 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
     private final WalletService service;
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
     private String activeWalletTab = "balances";
+    private String systemAccountSearch = "";
+    private int systemAccountOffset;
+    private String systemAccountDetailId;
+    private static final int SYSTEM_ACCOUNT_PAGE_SIZE = 50;
 
     public WalletOverlay(Player player, Wallet plugin, WalletService service) {
         super(player, p -> { });
@@ -85,6 +98,8 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
             addTab(t().get("TC_WALLET_TAB_ADMIN_TRANSACTIONS", uiPlayer), 160, "adminTransactions".equals(activeWalletTab), true, () -> selectTab("adminTransactions"));
             addTab(t().get("TC_WALLET_TAB_GLOBAL_BALANCES", uiPlayer), 190, "globalBalances".equals(activeWalletTab), true, () -> selectTab("globalBalances"));
             addTab(t().get("TC_WALLET_TAB_TOP_BALANCES", uiPlayer), 160, "topBalances".equals(activeWalletTab), true, () -> selectTab("topBalances"));
+            addTab(t().get("TC_WALLET_TAB_SYSTEM_ACCOUNTS", uiPlayer), 150,
+                    "systemAccounts".equals(activeWalletTab), true, () -> selectTab("systemAccounts"));
         }
         showActiveTab();
     }
@@ -99,6 +114,7 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
         else if ("adminTransactions".equals(activeWalletTab)) showAdminTransactions();
         else if ("globalBalances".equals(activeWalletTab)) showGlobalBalances();
         else if ("topBalances".equals(activeWalletTab)) showTopBalances();
+        else if ("systemAccounts".equals(activeWalletTab)) showSystemAccounts();
         else showBalances();
     }
 
@@ -303,6 +319,155 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
             Wallet.logger().error("Failed to render wallet top balances: " + ex.getMessage());
             body.addChild(message(t().get("TC_WALLET_ERR_LOAD_BALANCES", uiPlayer)));
         }
+    }
+
+    private void showSystemAccounts() {
+        if (!uiPlayer.isAdmin()) return;
+        activeWalletTab = "systemAccounts";
+        body.removeAllChilds();
+        if (systemAccountDetailId != null) {
+            showSystemAccountTransactions(systemAccountDetailId);
+            return;
+        }
+
+        UITextField search = new UITextField(systemAccountSearch);
+        search.setPivot(Pivot.UpperLeft);
+        search.setPosition(12, 12, false);
+        search.setSize(360, 34, false);
+        search.setMaxCharacters(120);
+        search.setBackgroundColor(0.02f, 0.02f, 0.02f, 0.78f);
+        search.setBorder(1);
+        search.setBorderColor(0.95f, 0.75f, 0.25f, 0.46f);
+        body.addChild(search);
+
+        AdvancedButton searchButton = actionButton(t().get("TC_WALLET_SEARCH", uiPlayer), () ->
+                search.getCurrentText(uiPlayer, value -> {
+                    systemAccountSearch = value == null ? "" : value.trim();
+                    systemAccountOffset = 0;
+                    rebuild();
+                }));
+        searchButton.setPosition(382, 12, false);
+        searchButton.setSize(120, 34, false);
+        body.addChild(searchButton);
+
+        SystemAccountsResult accounts = service.listSystemAccounts(systemAccountSearch, systemAccountOffset,
+                SYSTEM_ACCOUNT_PAGE_SIZE);
+        if (!accounts.success) {
+            body.addChild(message(t().get("TC_WALLET_ERR_LOAD_SYSTEM_ACCOUNTS", uiPlayer)));
+            return;
+        }
+        if (accounts.accounts.isEmpty()) {
+            body.addChild(message(t().get("TC_WALLET_EMPTY_SYSTEM_ACCOUNTS", uiPlayer)));
+            return;
+        }
+
+        TableScrollView table = new TableScrollView(
+                Arrays.asList(t().get("TC_WALLET_COL_ACCOUNT_ID", uiPlayer),
+                        t().get("TC_WALLET_COL_ACCOUNT", uiPlayer),
+                        t().get("TC_WALLET_COL_TYPE", uiPlayer), t().get("TC_WALLET_COL_SOURCE", uiPlayer),
+                        t().get("TC_WALLET_COL_STATUS", uiPlayer), t().get("TC_WALLET_COL_AMOUNT", uiPlayer),
+                        t().get("TC_WALLET_COL_ACTIONS", uiPlayer)),
+                Arrays.asList(18f, 20f, 10f, 14f, 10f, 14f, 14f));
+        table.setPosition(12, 56, false);
+        table.style.width.set(98, Unit.Percent);
+        table.setScrollBodyHeight(300f);
+        for (SystemAccount account : accounts.accounts) {
+            table.addRow(new TableRow(new ArrayList<>(Arrays.asList(
+                    cell(account.getAccountId(), 18f), cell(account.getDisplayName(), 20f),
+                    cell(account.getAccountType(), 10f), cell(account.getOwnerPlugin(), 14f),
+                    cell(account.getStatus(), 10f), cell(systemBalanceSummary(account.getAccountId()), 14f),
+                    new TableCell(detailButton(account.getAccountId()), 14f)))));
+        }
+        body.addChild(table.getRoot());
+
+        int page = systemAccountOffset / SYSTEM_ACCOUNT_PAGE_SIZE + 1;
+        int pages = Math.max(1, (accounts.total + SYSTEM_ACCOUNT_PAGE_SIZE - 1) / SYSTEM_ACCOUNT_PAGE_SIZE);
+        if (pages <= 1) return;
+        UILabel pageLabel = new UILabel(t().get("TC_WALLET_PAGE", uiPlayer)
+                .replace("PH_PAGE", Integer.toString(page)).replace("PH_PAGES", Integer.toString(pages)));
+        pageLabel.setPivot(Pivot.UpperCenter);
+        pageLabel.setPosition(50, 0, true);
+        pageLabel.style.top.set(398, Unit.Pixel);
+        pageLabel.setSize(180, 32, false);
+        pageLabel.setTextAlign(TextAnchor.MiddleCenter);
+        body.addChild(pageLabel);
+        if (systemAccountOffset > 0) {
+            AdvancedButton previous = actionButton("<", () -> {
+                systemAccountOffset = Math.max(0, systemAccountOffset - SYSTEM_ACCOUNT_PAGE_SIZE);
+                rebuild();
+            });
+            previous.setPosition(38, 0, true);
+            previous.style.top.set(398, Unit.Pixel);
+            body.addChild(previous);
+        }
+        if (systemAccountOffset + SYSTEM_ACCOUNT_PAGE_SIZE < accounts.total) {
+            AdvancedButton next = actionButton(">", () -> {
+                systemAccountOffset += SYSTEM_ACCOUNT_PAGE_SIZE;
+                rebuild();
+            });
+            next.setPosition(62, 0, true);
+            next.style.top.set(398, Unit.Pixel);
+            body.addChild(next);
+        }
+    }
+
+    private void showSystemAccountTransactions(String accountId) {
+        AdvancedButton back = actionButton(t().get("TC_WALLET_BACK", uiPlayer), () -> {
+            systemAccountDetailId = null;
+            rebuild();
+        });
+        back.setPosition(12, 12, false);
+        back.setSize(120, 34, false);
+        body.addChild(back);
+
+        SystemAccountTransactionsResult result = service.systemAccountTransactions(accountId, 100);
+        if (!result.success || result.transactions.isEmpty()) {
+            body.addChild(message(t().get(result.success ? "TC_WALLET_EMPTY_SYSTEM_TRANSACTIONS"
+                    : "TC_WALLET_ERR_LOAD_TRANSACTIONS", uiPlayer)));
+            return;
+        }
+        TableScrollView table = new TableScrollView(
+                Arrays.asList(t().get("TC_WALLET_COL_AMOUNT", uiPlayer),
+                        t().get("TC_WALLET_COL_CURRENCY", uiPlayer), t().get("TC_WALLET_COL_SOURCE", uiPlayer),
+                        t().get("TC_WALLET_COL_REASON", uiPlayer), t().get("TC_WALLET_COL_DATE", uiPlayer)),
+                Arrays.asList(12f, 18f, 18f, 34f, 18f));
+        table.setPosition(12, 56, false);
+        table.style.width.set(98, Unit.Percent);
+        table.setScrollBodyHeight(330f);
+        for (SystemAccountTransaction tx : result.transactions) {
+            table.addRow(new TableRow(new ArrayList<>(Arrays.asList(cell(formatDelta(tx.getDelta()), 12f),
+                    cell(tx.getCurrency().getIdentifier(), 18f), cell(tx.getPluginIdentifier(), 18f),
+                    cell(tx.getReason(), 34f), cell(dateFormat.format(new Date(tx.getCreatedAt())), 18f)))));
+        }
+        body.addChild(table.getRoot());
+    }
+
+    private String systemBalanceSummary(String accountId) {
+        SystemAccountBalancesResult result = service.systemAccountBalances(accountId);
+        if (!result.success || result.balances.isEmpty()) return "0";
+        StringBuilder summary = new StringBuilder();
+        for (SystemAccountBalance balance : result.balances) {
+            if (summary.length() > 0) summary.append(", ");
+            summary.append(balance.getBalance()).append(' ').append(balance.getCurrency().getIdentifier());
+        }
+        return summary.toString();
+    }
+
+    private AdvancedButton detailButton(String accountId) {
+        AdvancedButton button = actionButton(t().get("TC_WALLET_SYSTEM_TRANSACTIONS", uiPlayer), () -> {
+            systemAccountDetailId = accountId;
+            rebuild();
+        });
+        button.setSize(112, 24, false);
+        return button;
+    }
+
+    private AdvancedButton actionButton(String text, Runnable action) {
+        AdvancedButton button = AdvancedButtonFactory.defaultButton(text, event -> action.run());
+        button.setPivot(Pivot.UpperLeft);
+        button.setSize(42, 28, false);
+        button.setBorderEdgeRadius(3, false);
+        return button;
     }
 
 

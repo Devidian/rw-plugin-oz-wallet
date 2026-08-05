@@ -29,6 +29,11 @@ import de.omegazirkel.risingworld.wallet.WalletPluginInfoStatusProvider;
 import de.omegazirkel.risingworld.wallet.WalletService;
 import de.omegazirkel.risingworld.wallet.WalletTransactionResult;
 import de.omegazirkel.risingworld.wallet.WalletTransferResult;
+import de.omegazirkel.risingworld.wallet.AccountTransferResult;
+import de.omegazirkel.risingworld.wallet.SystemAccountBalancesResult;
+import de.omegazirkel.risingworld.wallet.SystemAccountResult;
+import de.omegazirkel.risingworld.wallet.SystemAccountsResult;
+import de.omegazirkel.risingworld.wallet.SystemAccountTransactionsResult;
 import de.omegazirkel.risingworld.wallet.ui.WalletCurrencyHud;
 import de.omegazirkel.risingworld.wallet.ui.WalletPlayerPluginData;
 import de.omegazirkel.risingworld.wallet.ui.WalletPlayerPluginSettings;
@@ -50,6 +55,7 @@ class WalletRuntime extends Plugin {
     private static WalletService walletService;
     private static PlayerSettings playerSettings;
     private static Connection sqliteCon;
+    private static String worldSystemAccountId;
     public static String name;
 
     public static OZLogger logger() {
@@ -74,6 +80,14 @@ class WalletRuntime extends Plugin {
                     s.defaultCurrencyIcon,
                     name,
                     true);
+            String worldName = Server.getOption("World_Name");
+            if (worldName == null || worldName.isBlank()) worldName = "world";
+            worldSystemAccountId = "world::" + worldName.trim();
+            SystemAccountResult worldAccount = walletService.createSystemAccount(worldSystemAccountId, "WORLD",
+                    "World treasury: " + worldName.trim(), name);
+            if (!worldAccount.success) {
+                logger().error("Failed to initialize world system account: " + worldAccount.message);
+            }
         } catch (SQLException ex) {
             logger().error("Failed to initialize wallet database: " + ex.getMessage());
             ex.printStackTrace();
@@ -337,6 +351,117 @@ class WalletRuntime extends Plugin {
 
     public WalletBalanceResult balanceDefault(int playerDbId) {
         return balance(playerDbId, s.defaultCurrencyIdentifier);
+    }
+
+    public String worldSystemAccountId() {
+        return worldSystemAccountId;
+    }
+
+    public SystemAccountResult createSystemAccount(String accountId, String accountType, String displayName,
+            String pluginIdentifier) {
+        if (walletService == null) return systemAccountDatabaseFailure();
+        return walletService.createSystemAccount(accountId, accountType, displayName, pluginIdentifier);
+    }
+
+    public SystemAccountResult systemAccount(String accountId) {
+        if (walletService == null) return systemAccountDatabaseFailure();
+        return walletService.systemAccount(accountId);
+    }
+
+    public SystemAccountsResult listSystemAccounts(String search, int offset, int limit) {
+        if (walletService == null) {
+            return SystemAccountsResult.failure(
+                    de.omegazirkel.risingworld.wallet.WalletErrorCode.DATABASE_ERROR,
+                    "Wallet database is not available.");
+        }
+        return walletService.listSystemAccounts(search, offset, limit);
+    }
+
+    public SystemAccountBalancesResult systemAccountBalances(String accountId) {
+        if (walletService == null) {
+            return SystemAccountBalancesResult.failure(
+                    de.omegazirkel.risingworld.wallet.WalletErrorCode.DATABASE_ERROR,
+                    "Wallet database is not available.");
+        }
+        return walletService.systemAccountBalances(accountId);
+    }
+
+    public SystemAccountTransactionsResult systemAccountTransactions(String accountId, int limit) {
+        if (walletService == null) {
+            return SystemAccountTransactionsResult.failure(
+                    de.omegazirkel.risingworld.wallet.WalletErrorCode.DATABASE_ERROR,
+                    "Wallet database is not available.");
+        }
+        return walletService.systemAccountTransactions(accountId, limit);
+    }
+
+    public SystemAccountResult archiveSystemAccount(String accountId, String pluginIdentifier) {
+        if (walletService == null) return systemAccountDatabaseFailure();
+        return walletService.archiveSystemAccount(accountId, pluginIdentifier);
+    }
+
+    public SystemAccountResult updateSystemAccountDisplayName(String accountId, String displayName,
+            String pluginIdentifier) {
+        if (walletService == null) return systemAccountDatabaseFailure();
+        return walletService.updateSystemAccountDisplayName(accountId, displayName, pluginIdentifier);
+    }
+
+    public AccountTransferResult transferPlayerToSystemIdempotent(int payerDbId, String payeeAccountId, long value,
+            String reason, String currencyIdentifier, String pluginIdentifier, String correlationId) {
+        if (walletService == null) return accountTransferDatabaseFailure();
+        AccountTransferResult result = walletService.transferPlayerToSystemIdempotent(payerDbId, payeeAccountId,
+                value, reason, currencyIdentifier, pluginIdentifier, correlationId);
+        if (result.success) refreshOnlineWalletHud(payerDbId);
+        return result;
+    }
+
+    public AccountTransferResult transferSystemToPlayerIdempotent(String payerAccountId, int payeeDbId, long value,
+            String reason, String currencyIdentifier, String pluginIdentifier, String correlationId) {
+        if (walletService == null) return accountTransferDatabaseFailure();
+        AccountTransferResult result = walletService.transferSystemToPlayerIdempotent(payerAccountId, payeeDbId,
+                value, reason, currencyIdentifier, pluginIdentifier, correlationId);
+        if (result.success) refreshOnlineWalletHud(payeeDbId);
+        return result;
+    }
+
+    public AccountTransferResult transferSystemToSystemIdempotent(String payerAccountId, String payeeAccountId,
+            long value, String reason, String currencyIdentifier, String pluginIdentifier, String correlationId) {
+        if (walletService == null) return accountTransferDatabaseFailure();
+        return walletService.transferSystemToSystemIdempotent(payerAccountId, payeeAccountId, value, reason,
+                currencyIdentifier, pluginIdentifier, correlationId);
+    }
+
+    public AccountTransferResult transferPlayerToWorldIdempotent(int payerDbId, long value, String reason,
+            String currencyIdentifier, String pluginIdentifier, String correlationId) {
+        if (worldSystemAccountId == null) return accountTransferDatabaseFailure();
+        return transferPlayerToSystemIdempotent(payerDbId, worldSystemAccountId, value, reason, currencyIdentifier,
+                pluginIdentifier, correlationId);
+    }
+
+    public AccountTransferResult reverseAccountTransferIdempotent(String originalCorrelationId,
+            String reversalCorrelationId, String reason, String pluginIdentifier) {
+        if (walletService == null) return accountTransferDatabaseFailure();
+        AccountTransferResult result = walletService.reverseAccountTransferIdempotent(originalCorrelationId,
+                reversalCorrelationId, reason, pluginIdentifier);
+        if (result.success && result.transfer != null) {
+            if ("PLAYER".equals(result.transfer.getPayerKind())) {
+                refreshOnlineWalletHud(Integer.parseInt(result.transfer.getPayerReference()));
+            }
+            if ("PLAYER".equals(result.transfer.getPayeeKind())) {
+                refreshOnlineWalletHud(Integer.parseInt(result.transfer.getPayeeReference()));
+            }
+        }
+        return result;
+    }
+
+    private static SystemAccountResult systemAccountDatabaseFailure() {
+        return SystemAccountResult.failure(de.omegazirkel.risingworld.wallet.WalletErrorCode.DATABASE_ERROR,
+                "Wallet database is not available.");
+    }
+
+    private static AccountTransferResult accountTransferDatabaseFailure() {
+        return AccountTransferResult.failure(de.omegazirkel.risingworld.wallet.WalletErrorCode.DATABASE_ERROR,
+                "Wallet database is not available.");
     }
 
     public static PlayerSettings playerSettings() {

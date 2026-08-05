@@ -9,6 +9,7 @@ Wallet and economy state plugin for Rising World.
 - transaction history
 - standalone wallet UI opened with `/wallet`
 - public API for optional integrations from sibling plugins
+- virtual/system accounts with per-currency balances and audit history
 
 `rw-plugin-oz-tools` is a hard runtime dependency.
 
@@ -114,6 +115,45 @@ SQLite transaction. Its non-empty correlation ID is immutable: exact retries
 return the original transfer, while reusing the ID with a changed request
 returns `IDEMPOTENCY_CONFLICT`. Cross-plugin sagas such as mail COD must use
 this method instead of paired `withdraw`/`deposit` calls.
+
+### System accounts
+
+Wallet stores non-player accounts separately from player database IDs. On
+startup it creates `world::<World_Name>` as the current world's revenue account;
+tracking starts at account creation and does not reconstruct old spending.
+Plugin-owned entities such as Land Claim cities can create stable accounts and
+use atomic, idempotent transfers without gaining access to Wallet internals.
+
+The additive public methods are:
+
+```java
+public String worldSystemAccountId();
+public SystemAccountResult createSystemAccount(String accountId, String accountType,
+    String displayName, String pluginIdentifier);
+public SystemAccountResult systemAccount(String accountId);
+public SystemAccountsResult listSystemAccounts(String search, int offset, int limit);
+public SystemAccountBalancesResult systemAccountBalances(String accountId);
+public SystemAccountTransactionsResult systemAccountTransactions(String accountId, int limit);
+public SystemAccountResult archiveSystemAccount(String accountId, String pluginIdentifier);
+public SystemAccountResult updateSystemAccountDisplayName(String accountId, String displayName,
+    String pluginIdentifier);
+public AccountTransferResult transferPlayerToSystemIdempotent(int payerDbId, String payeeAccountId,
+    long value, String reason, String currencyIdentifier, String pluginIdentifier, String correlationId);
+public AccountTransferResult transferSystemToPlayerIdempotent(String payerAccountId, int payeeDbId,
+    long value, String reason, String currencyIdentifier, String pluginIdentifier, String correlationId);
+public AccountTransferResult transferSystemToSystemIdempotent(String payerAccountId, String payeeAccountId,
+    long value, String reason, String currencyIdentifier, String pluginIdentifier, String correlationId);
+public AccountTransferResult transferPlayerToWorldIdempotent(int payerDbId, long value, String reason,
+    String currencyIdentifier, String pluginIdentifier, String correlationId);
+public AccountTransferResult reverseAccountTransferIdempotent(String originalCorrelationId,
+    String reversalCorrelationId, String reason, String pluginIdentifier);
+```
+
+Creation is idempotent for the same owner, type, and display metadata. Only the owning plugin may
+debit or archive a system account, and archive requires zero balances. Every
+money-moving method requires a correlation ID; exact retries return the first
+result and changed retries fail with `IDEMPOTENCY_CONFLICT`.
+The owning plugin may update display metadata without changing account identity.
 
 `listCurrencies()` returns `WalletCurrenciesResult` with public fields `success`, `errorCode`, `message`, and `currencies`. Each `WalletCurrency` exposes `getIdentifier()`, `getName()`, `getIconKey()`, `getPluginIdentifier()`, `getRegisteredAt()`, and `isDefaultCurrency()`. The list is ordered with the default currency first, then by currency identifier.
 
