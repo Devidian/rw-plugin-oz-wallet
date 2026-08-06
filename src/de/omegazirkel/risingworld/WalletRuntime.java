@@ -436,6 +436,16 @@ class WalletRuntime extends Plugin {
                 currencyIdentifier, pluginIdentifier, correlationId);
     }
 
+    public WalletTransactionResult creditSystemAccountIdempotent(String accountId, long value, String reason,
+            String currencyIdentifier, String pluginIdentifier, String correlationId) {
+        if (walletService == null) {
+            return WalletTransactionResult.failure(de.omegazirkel.risingworld.wallet.WalletErrorCode.DATABASE_ERROR,
+                    "Wallet database is not available.");
+        }
+        return walletService.creditSystemAccountIdempotent(accountId, value, reason, currencyIdentifier,
+                pluginIdentifier, correlationId);
+    }
+
     public AccountTransferResult transferPlayerToWorldIdempotent(int payerDbId, long value, String reason,
             String currencyIdentifier, String pluginIdentifier, String correlationId) {
         if (worldSystemAccountId == null) return accountTransferDatabaseFailure();

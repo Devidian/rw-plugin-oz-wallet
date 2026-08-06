@@ -158,6 +158,21 @@ public class SystemAccountTest {
         }
     }
 
+    @Test
+    public void ownerCanIssueFundsIdempotentlyButAnotherPluginCannot() throws Exception {
+        try (Connection connection = DriverManager.getConnection("jdbc:sqlite::memory:")) {
+            WalletService service = service(connection);
+            assertTrue(service.createSystemAccount("trader::npc-9", "TRADER", "Trader", "OZ - Shop").success);
+            assertFalse(service.creditSystemAccountIdempotent("trader::npc-9", 1000, "Seed", "OZC", "other", "seed")
+                    .success);
+            assertTrue(service.creditSystemAccountIdempotent("trader::npc-9", 1000, "Seed", "OZC", "OZ - Shop", "seed")
+                    .success);
+            assertTrue(service.creditSystemAccountIdempotent("trader::npc-9", 1000, "Seed", "OZC", "OZ - Shop", "seed")
+                    .success);
+            assertEquals(1000, service.systemAccountBalances("trader::npc-9").balances.get(0).getBalance());
+        }
+    }
+
     private WalletService service(Connection connection) throws Exception {
         WalletService service = new WalletService(new WalletDatabase(connection));
         assertTrue(service.registerCurrency("OZC", "OZC", "coin", "OZ - Wallet", true).success);

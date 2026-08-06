@@ -143,6 +143,8 @@ public AccountTransferResult transferSystemToPlayerIdempotent(String payerAccoun
     long value, String reason, String currencyIdentifier, String pluginIdentifier, String correlationId);
 public AccountTransferResult transferSystemToSystemIdempotent(String payerAccountId, String payeeAccountId,
     long value, String reason, String currencyIdentifier, String pluginIdentifier, String correlationId);
+public WalletTransactionResult creditSystemAccountIdempotent(String accountId, long value, String reason,
+    String currencyIdentifier, String pluginIdentifier, String correlationId);
 public AccountTransferResult transferPlayerToWorldIdempotent(int payerDbId, long value, String reason,
     String currencyIdentifier, String pluginIdentifier, String correlationId);
 public AccountTransferResult reverseAccountTransferIdempotent(String originalCorrelationId,
@@ -154,6 +156,8 @@ debit or archive a system account, and archive requires zero balances. Every
 money-moving method requires a correlation ID; exact retries return the first
 result and changed retries fail with `IDEMPOTENCY_CONFLICT`.
 The owning plugin may update display metadata without changing account identity.
+`creditSystemAccountIdempotent` is intentionally narrower than a general balance mutation: it may only credit the
+calling plugin's active account and records an immutable issuance correlation id plus a normal system-account audit row.
 
 `listCurrencies()` returns `WalletCurrenciesResult` with public fields `success`, `errorCode`, `message`, and `currencies`. Each `WalletCurrency` exposes `getIdentifier()`, `getName()`, `getIconKey()`, `getPluginIdentifier()`, `getRegisteredAt()`, and `isDefaultCurrency()`. The list is ordered with the default currency first, then by currency identifier.
 

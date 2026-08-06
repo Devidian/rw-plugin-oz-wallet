@@ -328,6 +328,43 @@ public class WalletService {
                 reason, currencyIdentifier, pluginIdentifier, correlationId);
     }
 
+    /**
+     * Creates currency in a system account. This is deliberately limited to its
+     * owning plugin and is permanently audited with an immutable correlation id.
+     */
+    public WalletTransactionResult creditSystemAccountIdempotent(String accountId, long amount, String reason,
+            String currencyIdentifier, String pluginIdentifier, String correlationId) {
+        SystemAccountResult account = ownedActiveAccount(accountId, pluginIdentifier);
+        if (!account.success) return WalletTransactionResult.failure(account.errorCode, account.message);
+        String normalizedCurrency = normalizeCurrencyIdentifier(currencyIdentifier);
+        String normalizedReason = normalizeReason(reason);
+        String normalizedPlugin = normalizeRequired(pluginIdentifier);
+        String normalizedCorrelation = normalizeCorrelationId(correlationId);
+        if (amount <= 0 || normalizedCurrency == null || normalizedReason == null || normalizedPlugin == null
+                || normalizedCorrelation == null) {
+            return WalletTransactionResult.failure(WalletErrorCode.INVALID_ARGUMENT,
+                    "Positive amount, currency, reason, plugin, and correlation id are required.");
+        }
+        try {
+            Optional<WalletCurrency> currency = database.findCurrency(normalizedCurrency);
+            if (currency.isEmpty()) {
+                return WalletTransactionResult.failure(WalletErrorCode.UNKNOWN_CURRENCY, "Currency is not registered.");
+            }
+            database.creditSystemAccountIdempotent(account.account.getAccountId(), currency.get(), amount,
+                    normalizedPlugin, normalizedReason, normalizedCorrelation);
+            return WalletTransactionResult.success(null);
+        } catch (IdempotencyConflictException ex) {
+            return WalletTransactionResult.failure(WalletErrorCode.IDEMPOTENCY_CONFLICT,
+                    "Correlation id is already bound to another issuance.");
+        } catch (ArithmeticException ex) {
+            return WalletTransactionResult.failure(WalletErrorCode.INVALID_ARGUMENT,
+                    "System account balance exceeds supported range.");
+        } catch (SQLException ex) {
+            Wallet.logger().error("creditSystemAccountIdempotent failed: " + ex.getMessage());
+            return WalletTransactionResult.failure(WalletErrorCode.DATABASE_ERROR, "System account issuance failed.");
+        }
+    }
+
     public AccountTransferResult reverseAccountTransferIdempotent(String originalCorrelationId,
             String reversalCorrelationId, String reason, String pluginIdentifier) {
         String original = normalizeCorrelationId(originalCorrelationId);

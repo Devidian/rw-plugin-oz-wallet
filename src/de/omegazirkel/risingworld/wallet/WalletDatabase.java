@@ -12,7 +12,7 @@ import java.util.Optional;
 import de.omegazirkel.risingworld.Wallet;
 
 public class WalletDatabase {
-    private static final int SCHEMA_VERSION = 3;
+    private static final int SCHEMA_VERSION = 4;
 
     private final Connection connection;
 
@@ -129,6 +129,21 @@ public class WalletDatabase {
                         reason TEXT NOT NULL,
                         created_at BIGINT NOT NULL,
                         FOREIGN KEY (currency_identifier) REFERENCES wallet_currencies(identifier)
+                    );
+                    """);
+            statement.execute("""
+                    CREATE TABLE IF NOT EXISTS wallet_system_issuances (
+                        correlation_id TEXT PRIMARY KEY,
+                        account_id TEXT NOT NULL,
+                        currency_identifier TEXT NOT NULL,
+                        amount BIGINT NOT NULL,
+                        transaction_id BIGINT NOT NULL,
+                        source_plugin TEXT NOT NULL,
+                        reason TEXT NOT NULL,
+                        created_at BIGINT NOT NULL,
+                        FOREIGN KEY (account_id) REFERENCES wallet_system_accounts(account_id),
+                        FOREIGN KEY (currency_identifier) REFERENCES wallet_currencies(identifier),
+                        FOREIGN KEY (transaction_id) REFERENCES wallet_system_transactions(id)
                     );
                     """);
             statement.execute("""
@@ -641,6 +656,61 @@ public class WalletDatabase {
             return new AccountTransfer(correlationId, payerKind, payerReference, payeeKind, payeeReference,
                     currency, amount, debitId, creditId, pluginIdentifier, reason, now);
         } catch (SQLException | RuntimeException | InsufficientFundsException ex) {
+            rollbackQuietly();
+            throw ex;
+        } finally {
+            connection.setAutoCommit(previousAutoCommit);
+        }
+    }
+
+    /** Credits a system account from its owning plugin's explicitly audited issuance source. */
+    public synchronized boolean creditSystemAccountIdempotent(String accountId, WalletCurrency currency, long amount,
+            String pluginIdentifier, String reason, String correlationId)
+            throws SQLException, IdempotencyConflictException {
+        try (PreparedStatement lookup = connection.prepareStatement("""
+                SELECT account_id, currency_identifier, amount, source_plugin, reason
+                FROM wallet_system_issuances WHERE correlation_id = ?
+                """)) {
+            lookup.setString(1, correlationId);
+            try (ResultSet existing = lookup.executeQuery()) {
+                if (existing.next()) {
+                    if (accountId.equals(existing.getString("account_id"))
+                            && currency.getIdentifier().equals(existing.getString("currency_identifier"))
+                            && amount == existing.getLong("amount")
+                            && pluginIdentifier.equals(existing.getString("source_plugin"))
+                            && reason.equals(existing.getString("reason"))) return true;
+                    throw new IdempotencyConflictException();
+                }
+            }
+        }
+        boolean previousAutoCommit = connection.getAutoCommit();
+        connection.setAutoCommit(false);
+        try {
+            long current = accountBalance("SYSTEM", accountId, currency.getIdentifier());
+            long resulting = Math.addExact(current, amount);
+            long now = now();
+            upsertAccountBalance("SYSTEM", accountId, currency.getIdentifier(), resulting, now);
+            long transactionId = insertAccountTransaction("SYSTEM", accountId, currency.getIdentifier(), amount,
+                    resulting, pluginIdentifier, reason, now);
+            try (PreparedStatement insert = connection.prepareStatement("""
+                    INSERT INTO wallet_system_issuances(
+                        correlation_id, account_id, currency_identifier, amount, transaction_id,
+                        source_plugin, reason, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """)) {
+                insert.setString(1, correlationId);
+                insert.setString(2, accountId);
+                insert.setString(3, currency.getIdentifier());
+                insert.setLong(4, amount);
+                insert.setLong(5, transactionId);
+                insert.setString(6, pluginIdentifier);
+                insert.setString(7, reason);
+                insert.setLong(8, now);
+                insert.executeUpdate();
+            }
+            connection.commit();
+            return true;
+        } catch (SQLException | RuntimeException ex) {
             rollbackQuietly();
             throw ex;
         } finally {

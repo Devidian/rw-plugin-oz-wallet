@@ -2,6 +2,10 @@
 
 <https://www.conventionalcommits.org/en/v1.0.0/>
 
+## [0.6.1] - 2026-08-06 | Audited system-account issuance
+
+- feat: allow a system-account owner to issue funds into its own account with an immutable audit correlation id
+
 ## [0.6.0] - 2026-08-06 | System-account audit language
 
 - feat: let administrators choose English or German for durable system-account transaction reasons
