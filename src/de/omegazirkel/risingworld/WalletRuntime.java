@@ -319,6 +319,11 @@ class WalletRuntime extends Plugin {
         return identifier == null ? s.defaultCurrencyIdentifier : identifier;
     }
 
+    /** Language selected by administrators for system-account audit reasons. */
+    public String walletAuditLanguage() {
+        return s == null ? "en" : s.auditLanguage;
+    }
+
     public boolean databaseAvailable() {
         return walletService != null;
     }

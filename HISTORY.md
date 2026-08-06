@@ -2,6 +2,11 @@
 
 <https://www.conventionalcommits.org/en/v1.0.0/>
 
+## [0.6.0] - 2026-08-06 | System-account audit language
+
+- feat: let administrators choose English or German for durable system-account transaction reasons
+- feat: expose the selected language through the compatible Wallet bridge API
+
 ## [0.5.0] - 2026-08-05 | System accounts
 
 - feat: add Wallet-owned virtual/system accounts with separate per-currency balances and audit history

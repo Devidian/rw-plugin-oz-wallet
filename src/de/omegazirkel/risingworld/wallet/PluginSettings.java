@@ -29,6 +29,7 @@ public class PluginSettings {
     public long welcomeBonusAmount = 100L;
     public boolean welcomeBonusAmountValid = true;
     public int auditLogLimit = 50;
+    public String auditLanguage = "en";
     public String logLevel = Level.ALL.name();
     public boolean reloadOnChange = true;
 
@@ -102,6 +103,8 @@ public class PluginSettings {
                 auditLogLimit = 50;
                 logger().warn("Invalid auditLogLimit " + auditLogLimitValue + ", using default 50.");
             }
+            String configuredAuditLanguage = settings.getProperty("wallet-audit-language", "en").trim().toLowerCase();
+            auditLanguage = configuredAuditLanguage.equals("de") ? "de" : "en";
             logLevel = settings.getProperty("logLevel", "ALL");
 
             logger().info(plugin.getName() + " Plugin settings loaded");
@@ -146,8 +149,15 @@ public class PluginSettings {
                 entry("welcomeBonus.amount", "Welcome bonus amount", "Amount paid for the first-join welcome bonus.",
                         welcomeBonusAmount, "100", AdminSettingsType.INTEGER),
                 AdminSettingsEntry.group("adminOverview", "Admin overview", "Admin wallet overview display behavior."),
+                selectEntry("wallet-audit-language", "System account audit language",
+                        "Language used for system-account transaction reasons.", auditLanguage, "en"),
                 entry("auditLogLimit", "Audit log limit", "Maximum number of wallet audit rows shown in UI.",
                         auditLogLimit, "50", AdminSettingsType.INTEGER));
+    }
+
+    private AdminSettingsEntry selectEntry(String key, String label, String description, String value, String defaultValue) {
+        return new AdminSettingsEntry(key, label, description, value, defaultValue, AdminSettingsType.SELECT, false,
+                newValue -> SettingsFileEditor.writeValue(settingsPath(), key, newValue), java.util.List.of("en", "de"));
     }
 
     private AdminSettingsEntry entry(String key, String label, String description, Object value, String defaultValue,
