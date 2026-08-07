@@ -2,6 +2,10 @@
 
 <https://www.conventionalcommits.org/en/v1.0.0/>
 
+## [0.6.2] - 2026-08-07 | System-account overview
+
+- fix: sort the administrator system-account overview by total balance descending
+
 ## [0.6.1] - 2026-08-06 | Audited system-account issuance
 
 - feat: allow a system-account owner to issue funds into its own account with an immutable audit correlation id

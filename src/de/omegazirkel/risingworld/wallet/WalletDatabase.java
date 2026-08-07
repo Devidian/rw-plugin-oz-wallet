@@ -192,10 +192,14 @@ public class WalletDatabase {
     public List<SystemAccount> listSystemAccounts(String search, int offset, int limit) throws SQLException {
         boolean filtered = search != null && !search.isBlank();
         String sql = """
-                SELECT account_id, owner_plugin, account_type, display_name, status, created_at, updated_at
-                FROM wallet_system_accounts
-                """ + (filtered ? "WHERE lower(account_id) LIKE ? OR lower(display_name) LIKE ? " : "")
-                + "ORDER BY created_at DESC, account_id ASC LIMIT ? OFFSET ?";
+                SELECT account.account_id, account.owner_plugin, account.account_type, account.display_name,
+                       account.status, account.created_at, account.updated_at
+                FROM wallet_system_accounts account
+                LEFT JOIN wallet_system_balances balance ON balance.account_id = account.account_id
+                """ + (filtered ? "WHERE lower(account.account_id) LIKE ? OR lower(account.display_name) LIKE ? " : "")
+                + "GROUP BY account.account_id "
+                + "ORDER BY COALESCE(SUM(balance.balance), 0) DESC, account.created_at DESC, account.account_id ASC "
+                + "LIMIT ? OFFSET ?";
         List<SystemAccount> accounts = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             int index = 1;

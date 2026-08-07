@@ -30,6 +30,8 @@ balances, transaction history, and transfer contracts.
 - Only the owner plugin may debit or archive an account. Any plugin may credit
   an active account through a player-to-system transfer.
 - Archive is non-destructive and requires all balances to be zero.
+- The administrator overview sorts accounts by total balance descending; zero-balance archived accounts therefore
+  naturally appear at the bottom.
 - All transfers involving system accounts are atomic and require immutable
   correlation IDs.
 - Wallet creates `world::<World_Name>` at startup with a zero balance and no
@@ -70,6 +72,7 @@ balances or history are deleted.
 - [x] Add player/system and system/system idempotent transfers.
 - [x] Create the current world account during startup.
 - [x] Add admin list/search/pagination and transaction detail.
+- [x] Sort the administrator overview by total balance descending.
 - [x] Add DE/EN UI labels.
 - [x] Add unit tests.
 - [x] Complete package/API/entrypoint validation after consumer integration.

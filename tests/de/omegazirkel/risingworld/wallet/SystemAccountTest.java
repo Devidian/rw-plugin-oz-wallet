@@ -134,6 +134,27 @@ public class SystemAccountTest {
     }
 
     @Test
+    public void accountListIsSortedByBalanceDescending() throws Exception {
+        try (Connection connection = DriverManager.getConnection("jdbc:sqlite::memory:")) {
+            WalletService service = service(connection);
+            assertTrue(service.createSystemAccount("archived::zero", "TEST", "Archived", "test").success);
+            assertTrue(service.createSystemAccount("city::low", "CITY", "Low", "test").success);
+            assertTrue(service.createSystemAccount("world::high", "WORLD", "High", "test").success);
+            assertTrue(service.deposit(7, 110, "Seed", "OZC", "test").success);
+            assertTrue(service.transferPlayerToSystemIdempotent(7, "city::low", 10, "Fund", "OZC", "test",
+                    "fund-low").success);
+            assertTrue(service.transferPlayerToSystemIdempotent(7, "world::high", 100, "Fund", "OZC", "test",
+                    "fund-high").success);
+
+            SystemAccountsResult result = service.listSystemAccounts("", 0, 10);
+            assertTrue(result.success);
+            assertEquals("world::high", result.accounts.get(0).getAccountId());
+            assertEquals("city::low", result.accounts.get(1).getAccountId());
+            assertEquals("archived::zero", result.accounts.get(2).getAccountId());
+        }
+    }
+
+    @Test
     public void sourcePluginCanReverseItsOriginalTransferExactlyOnce() throws Exception {
         try (Connection connection = DriverManager.getConnection("jdbc:sqlite::memory:")) {
             WalletService service = service(connection);
