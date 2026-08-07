@@ -328,6 +328,17 @@ public class WalletService {
                 reason, currencyIdentifier, pluginIdentifier, correlationId);
     }
 
+    /** Debits the Wallet-owned world treasury only to an active account owned by the calling plugin. */
+    public AccountTransferResult transferWorldToSystemIdempotent(String worldAccountId, String payeeAccountId,
+            long amount, String reason, String currencyIdentifier, String pluginIdentifier, String correlationId) {
+        SystemAccountResult world = ownedActiveAccount(worldAccountId, Wallet.name);
+        if (!world.success) return AccountTransferResult.failure(world.errorCode, world.message);
+        SystemAccountResult payee = ownedActiveAccount(payeeAccountId, pluginIdentifier);
+        if (!payee.success) return AccountTransferResult.failure(payee.errorCode, payee.message);
+        return transferAccount(SYSTEM, world.account.getAccountId(), SYSTEM, payee.account.getAccountId(), amount,
+                reason, currencyIdentifier, pluginIdentifier, correlationId);
+    }
+
     /**
      * Creates currency in a system account. This is deliberately limited to its
      * owning plugin and is permanently audited with an immutable correlation id.

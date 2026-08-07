@@ -27,6 +27,7 @@ public class PluginSettings {
     public boolean enableWelcomeMessage = false;
     public boolean welcomeBonusEnabled = true;
     public long welcomeBonusAmount = 100L;
+    public long worldInitialCapital = 10_000L;
     public boolean welcomeBonusAmountValid = true;
     public int auditLogLimit = 50;
     public String auditLanguage = "en";
@@ -90,6 +91,13 @@ public class PluginSettings {
                 welcomeBonusAmount = 0L;
                 welcomeBonusAmountValid = false;
             }
+            String worldInitialCapitalValue = settings.getProperty("worldInitialCapital", "10000");
+            try {
+                worldInitialCapital = Math.max(0L, Long.parseLong(worldInitialCapitalValue.trim()));
+            } catch (NumberFormatException ex) {
+                worldInitialCapital = 10_000L;
+                logger().warn("Invalid worldInitialCapital " + worldInitialCapitalValue + ", using default 10000.");
+            }
             String auditLogLimitValue = settings.getProperty("auditLogLimit", "50");
             try {
                 int configuredAuditLogLimit = Integer.parseInt(auditLogLimitValue.trim());
@@ -148,6 +156,9 @@ public class PluginSettings {
                         welcomeBonusEnabled, "true", AdminSettingsType.BOOLEAN),
                 entry("welcomeBonus.amount", "Welcome bonus amount", "Amount paid for the first-join welcome bonus.",
                         welcomeBonusAmount, "100", AdminSettingsType.INTEGER),
+                entry("worldInitialCapital", "World initial capital",
+                        "Initial world-account capital, issued once when a new world account is created.",
+                        worldInitialCapital, "10000", AdminSettingsType.INTEGER),
                 AdminSettingsEntry.group("adminOverview", "Admin overview", "Admin wallet overview display behavior."),
                 selectEntry("wallet-audit-language", "System account audit language",
                         "Language used for system-account transaction reasons.", auditLanguage, "en"),

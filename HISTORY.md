@@ -2,6 +2,10 @@
 
 <https://www.conventionalcommits.org/en/v1.0.0/>
 
+## [0.7.0] - 2026-08-08 | Player audit access
+
+- feat: let administrators open a top-balance player's latest 100 Wallet transactions directly from the overview.
+
 ## [0.6.2] - 2026-08-07 | System-account overview
 
 - fix: sort the administrator system-account overview by total balance descending

@@ -24,6 +24,7 @@ import de.omegazirkel.risingworld.wallet.WalletBalanceResult;
 import de.omegazirkel.risingworld.wallet.WalletBalance;
 import de.omegazirkel.risingworld.wallet.WalletCurrenciesResult;
 import de.omegazirkel.risingworld.wallet.WalletCurrencyResult;
+import de.omegazirkel.risingworld.wallet.WalletErrorCode;
 import de.omegazirkel.risingworld.wallet.WalletDatabase;
 import de.omegazirkel.risingworld.wallet.WalletPluginInfoStatusProvider;
 import de.omegazirkel.risingworld.wallet.WalletService;
@@ -83,10 +84,17 @@ class WalletRuntime extends Plugin {
             String worldName = Server.getOption("World_Name");
             if (worldName == null || worldName.isBlank()) worldName = "world";
             worldSystemAccountId = "world::" + worldName.trim();
+            boolean newWorldAccount = walletService.systemAccount(worldSystemAccountId).errorCode
+                    == WalletErrorCode.ACCOUNT_NOT_FOUND;
             SystemAccountResult worldAccount = walletService.createSystemAccount(worldSystemAccountId, "WORLD",
                     "World treasury: " + worldName.trim(), name);
             if (!worldAccount.success) {
                 logger().error("Failed to initialize world system account: " + worldAccount.message);
+            } else if (newWorldAccount && s.worldInitialCapital > 0L) {
+                WalletTransactionResult seed = walletService.creditSystemAccountIdempotent(worldSystemAccountId,
+                        s.worldInitialCapital, "Initial world treasury capital", s.defaultCurrencyIdentifier, name,
+                        "world:" + worldName.trim() + ":initial-capital");
+                if (!seed.success) logger().error("Failed to fund new world account: " + seed.message);
             }
         } catch (SQLException ex) {
             logger().error("Failed to initialize wallet database: " + ex.getMessage());
@@ -433,6 +441,13 @@ class WalletRuntime extends Plugin {
             long value, String reason, String currencyIdentifier, String pluginIdentifier, String correlationId) {
         if (walletService == null) return accountTransferDatabaseFailure();
         return walletService.transferSystemToSystemIdempotent(payerAccountId, payeeAccountId, value, reason,
+                currencyIdentifier, pluginIdentifier, correlationId);
+    }
+
+    public AccountTransferResult transferWorldToSystemIdempotent(String payeeAccountId, long value, String reason,
+            String currencyIdentifier, String pluginIdentifier, String correlationId) {
+        if (walletService == null || worldSystemAccountId == null) return accountTransferDatabaseFailure();
+        return walletService.transferWorldToSystemIdempotent(worldSystemAccountId, payeeAccountId, value, reason,
                 currencyIdentifier, pluginIdentifier, correlationId);
     }
 
