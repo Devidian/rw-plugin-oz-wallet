@@ -29,6 +29,7 @@ import de.omegazirkel.risingworld.wallet.WalletDatabase;
 import de.omegazirkel.risingworld.wallet.WalletPluginInfoStatusProvider;
 import de.omegazirkel.risingworld.wallet.WalletService;
 import de.omegazirkel.risingworld.wallet.WalletTransactionResult;
+import de.omegazirkel.risingworld.wallet.WorldTreasuryService;
 import de.omegazirkel.risingworld.wallet.WalletTransferResult;
 import de.omegazirkel.risingworld.wallet.AccountTransferResult;
 import de.omegazirkel.risingworld.wallet.SystemAccountBalancesResult;
@@ -96,6 +97,11 @@ class WalletRuntime extends Plugin {
                         "world:" + worldName.trim() + ":initial-capital");
                 if (!seed.success) logger().error("Failed to fund new world account: " + seed.message);
             }
+            WalletTransactionResult annualCapital = new WorldTreasuryService(walletService, name).reconcile(
+                    worldSystemAccountId, Server.getGameTime(net.risingworld.api.objects.Time.Unit.Years),
+                    Server.getGameTimeSpeed(), daysPerMonth(), s.defaultCurrencyIdentifier);
+            if (!annualCapital.success) logger().error("Failed to issue annual world treasury capital: "
+                    + annualCapital.message);
         } catch (SQLException ex) {
             logger().error("Failed to initialize wallet database: " + ex.getMessage());
             ex.printStackTrace();
@@ -115,6 +121,17 @@ class WalletRuntime extends Plugin {
         PluginInfoStatusProviders.registerProvider(
                 new WalletPluginInfoStatusProvider((Wallet) this, getDescription("version")));
         logger().info(this.getName() + " Plugin is enabled version:" + this.getDescription("version"));
+    }
+
+    private int daysPerMonth() {
+        try {
+            String configured = Server.getOption("Days_Per_Month");
+            return configured == null ? WorldTreasuryService.STANDARD_DAYS_PER_MONTH
+                    : Integer.parseInt(configured.trim());
+        } catch (RuntimeException ex) {
+            logger().warn("Could not read Days_Per_Month; using " + WorldTreasuryService.STANDARD_DAYS_PER_MONTH);
+            return WorldTreasuryService.STANDARD_DAYS_PER_MONTH;
+        }
     }
 
     @Override

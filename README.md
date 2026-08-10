@@ -120,7 +120,13 @@ this method instead of paired `withdraw`/`deposit` calls.
 
 Wallet stores non-player accounts separately from player database IDs. On
 startup it creates `world::<World_Name>` as the current world's revenue account;
-tracking starts at account creation and does not reconstruct old spending.
+new accounts receive the configured one-time initial capital. On every startup,
+Wallet also catches up one audited issuance per missing in-game year. The annual
+standard amount is 10,000 default-currency units at game-time speed `2.5` and
+30 days per month; it scales proportionally with both server values and records
+each transaction as `Guthaben für Jahr <n>`. Immutable per-year correlation IDs
+make retries safe. Tracking starts at account creation and does not reconstruct
+old spending.
 Plugin-owned entities such as Land Claim cities can create stable accounts and
 use atomic, idempotent transfers without gaining access to Wallet internals.
 

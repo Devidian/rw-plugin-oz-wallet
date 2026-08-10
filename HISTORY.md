@@ -2,6 +2,10 @@
 
 <https://www.conventionalcommits.org/en/v1.0.0/>
 
+## [0.8.0] - 2026-08-10 | Annual world treasury
+
+- feat: issue a catch-up world-account treasury payment for every missing in-game year, scaled to game speed and days per month and protected by immutable per-year correlations.
+
 ## [0.7.0] - 2026-08-08 | Player audit access
 
 - feat: let administrators open a top-balance player's latest 100 Wallet transactions directly from the overview.

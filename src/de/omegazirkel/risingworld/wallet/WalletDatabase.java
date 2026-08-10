@@ -722,6 +722,24 @@ public class WalletDatabase {
         }
     }
 
+    /** Returns the number of immutable issuances recorded for one correlation-id namespace. */
+    public int countSystemIssuances(String accountId, String correlationPrefix) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT COUNT(*) FROM wallet_system_issuances
+                WHERE account_id = ? AND correlation_id LIKE ? ESCAPE '\\'
+                """)) {
+            statement.setString(1, accountId);
+            statement.setString(2, escapeLike(correlationPrefix) + "%");
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next() ? result.getInt(1) : 0;
+            }
+        }
+    }
+
+    private static String escapeLike(String value) {
+        return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+    }
+
     public Optional<AccountTransfer> findAccountTransfer(String correlationId) throws SQLException {
         if (correlationId == null || correlationId.isBlank()) return Optional.empty();
         try (PreparedStatement statement = connection.prepareStatement("""

@@ -376,6 +376,16 @@ public class WalletService {
         }
     }
 
+    /** Counts prior immutable system-account issuances in a private correlation-id namespace. */
+    int countSystemIssuances(String accountId, String correlationPrefix) {
+        try {
+            return database.countSystemIssuances(accountId, correlationPrefix);
+        } catch (SQLException ex) {
+            Wallet.logger().error("countSystemIssuances failed: " + ex.getMessage());
+            return -1;
+        }
+    }
+
     public AccountTransferResult reverseAccountTransferIdempotent(String originalCorrelationId,
             String reversalCorrelationId, String reason, String pluginIdentifier) {
         String original = normalizeCorrelationId(originalCorrelationId);
