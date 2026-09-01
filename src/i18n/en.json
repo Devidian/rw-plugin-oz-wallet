@@ -1,0 +1,192 @@
+{
+  "tc": {
+    "btn": {
+      "wallet": {
+        "hud": {
+          "off": "Off",
+          "on": "On"
+        }
+      }
+    },
+    "cmd": {
+      "help": "Help:\nAvailable chat commands:\n\u003ccolor\u003dred\u003e/PH_PLUGIN_CMD status\u003c/color\u003e shows plugin infos\n\u003ccolor\u003dred\u003e/PH_PLUGIN_CMD open\u003c/color\u003e opens the plugin menu\n\u003ccolor\u003dred\u003e/PH_PLUGIN_CMD help\u003c/color\u003e shows this help\n\n\u003ccolor\u003dyellow\u003eTip:\u003c/color\u003e Bind the command \u003ccolor\u003dred\u003e/PH_PLUGIN_CMD open\u003c/color\u003e to a mouse button or keyboard key.",
+      "status": "🔎 Plugin Status\n➡️ Plugin version: PH_VERSION\n➡️ Installed languages: PH_LANG_AVAILABLE\n➡️ Your language: PH_LANGUAGE\n➡️ Used language: PH_USEDLANG\n➡️ Translated by: Devidian"
+    },
+    "err": {
+      "cmd": {
+        "unknown": "Unknown command. Type \u003ccolor\u003dred\u003e/PH_PLUGIN_CMD help\u003c/color\u003e for help."
+      }
+    },
+    "label": {
+      "show": {
+        "wallet": {
+          "hud": "Show wallet in inventory"
+        }
+      },
+      "wallet": {
+        "shortcut": "Show Wallet shortcut in /ozt and inventory"
+      }
+    },
+    "msg": {
+      "plugin": {
+        "welcome": "➡️ \u003ccolor\u003d#F00000\u003ePH_PLUGIN_NAME\u003c/color\u003e | \u003ccolor\u003d#F0F000\u003evPH_PLUGIN_VERSION\u003c/color\u003e | \u003ccolor\u003d#C0C0C0\u003e/PH_PLUGIN_CMD\u003c/color\u003e | loaded!"
+      }
+    },
+    "setting": {
+      "adminoverview": {
+        "desc": "Admin wallet overview display behavior.",
+        "label": "Admin overview"
+      },
+      "auditloglimit": {
+        "desc": "Maximum number of wallet audit rows shown in UI.",
+        "label": "Audit log limit"
+      },
+      "currency": {
+        "desc": "Default Wallet currency registration.",
+        "label": "Default currency"
+      },
+      "defaultcurrency": {
+        "icon": {
+          "desc": "Asset icon used for the default Wallet currency.",
+          "label": "Currency icon"
+        },
+        "identifier": {
+          "desc": "Identifier for the default Wallet currency.",
+          "label": "Currency identifier"
+        },
+        "name": {
+          "desc": "Display name for the default Wallet currency.",
+          "label": "Currency name"
+        }
+      },
+      "general": {
+        "desc": "Logging, reload, command, and welcome behavior.",
+        "label": "General"
+      },
+      "loglevel": {
+        "desc": "Controls Wallet logging verbosity.",
+        "label": "Log level"
+      },
+      "reloadonchange": {
+        "desc": "Documents that Wallet settings reload when settings.properties changes.",
+        "label": "Reload on change"
+      },
+      "sendpluginwelcome": {
+        "desc": "Shows a short wallet message when a player joins.",
+        "label": "Welcome message"
+      },
+      "walletcommand": {
+        "desc": "Chat command used to open the wallet.",
+        "label": "Wallet command"
+      },
+      "welcomebonus": {
+        "amount": {
+          "desc": "Amount paid for the first-join welcome bonus.",
+          "label": "Welcome bonus amount"
+        },
+        "desc": "First-join Wallet bonus behavior.",
+        "enabled": {
+          "desc": "Enables the first-join welcome bonus.",
+          "label": "Welcome bonus"
+        },
+        "label": "Welcome bonus"
+      }
+    },
+    "wallet": {
+      "back": "Back",
+      "close": "Close",
+      "col": {
+        "account": {
+          "$value": "Account",
+          "id": "Account ID"
+        },
+        "actions": "Actions",
+        "amount": "Amount",
+        "currency": "Currency",
+        "date": "Date (GMT)",
+        "global": {
+          "balance": "Global balance"
+        },
+        "identifier": "Identifier",
+        "player": "Player",
+        "rank": "Rank",
+        "reason": "Reason",
+        "source": "Source",
+        "status": "Status",
+        "type": "Type"
+      },
+      "default": {
+        "currency": {
+          "hint": "(Default currency)"
+        }
+      },
+      "empty": {
+        "balances": "No balances yet.",
+        "global": {
+          "balances": "No global balances yet."
+        },
+        "system": {
+          "accounts": "No system accounts found.",
+          "transactions": "No system-account transactions yet."
+        },
+        "top": {
+          "balances": "No positive standard-currency balances yet."
+        },
+        "transactions": "No transactions yet."
+      },
+      "err": {
+        "database": {
+          "unavailable": "OZ - Wallet: wallet database is not available."
+        },
+        "load": {
+          "balances": "Could not load balances.",
+          "system": {
+            "accounts": "Could not load system accounts."
+          },
+          "transactions": "Could not load transactions."
+        }
+      },
+      "info": {
+        "panel": {
+          "info": "\u003cb\u003ePH_PLUGIN_NAME\u003c/b\u003e\nVersion: PH_VERSION\nCommand: /PH_PLUGIN_CMD\n\nWallet owns currencies, player balances, transaction history, and economy APIs for sibling plugins.",
+          "status": "\u003cb\u003eWallet status\u003c/b\u003e\nDatabase: PH_DATABASE_STATUS\nDefault currency: PH_DEFAULT_CURRENCY (PH_DEFAULT_CURRENCY_NAME)\nInventory HUD: PH_WALLET_HUD\nWelcome bonus: PH_WELCOME_BONUS\nWelcome bonus amount: PH_WELCOME_BONUS_AMOUNT\nAudit log limit: PH_AUDIT_LOG_LIMIT"
+        }
+      },
+      "inventory": {
+        "panel": {
+          "title": "Wallet"
+        }
+      },
+      "page": "Page PH_PAGE / PH_PAGES",
+      "search": "Search",
+      "source": {
+        "prefix": "Source: PH_SOURCE"
+      },
+      "system": {
+        "transactions": "Transactions"
+      },
+      "tab": {
+        "admin": {
+          "transactions": "Audit log"
+        },
+        "balances": "Balances",
+        "global": {
+          "balances": "Global balances"
+        },
+        "system": {
+          "accounts": "System accounts"
+        },
+        "top": {
+          "balances": "Top balances"
+        },
+        "transactions": "Transactions"
+      },
+      "title": "Wallet",
+      "welcome": {
+        "bonus": {
+          "granted": "Welcome bonus received: PH_AMOUNT PH_CURRENCY"
+        }
+      }
+    }
+  }
+}

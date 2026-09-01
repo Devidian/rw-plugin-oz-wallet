@@ -16,7 +16,6 @@ import de.omegazirkel.risingworld.tools.I18n;
 import de.omegazirkel.risingworld.tools.PlayerDatabaseHelper;
 import de.omegazirkel.risingworld.tools.PlayerDatabaseHelper.PlayerRecord;
 import de.omegazirkel.risingworld.tools.ui.AssetManager;
-import de.omegazirkel.risingworld.tools.ui.CursorManager;
 import de.omegazirkel.risingworld.wallet.ui.WalletOverlay;
 import de.omegazirkel.risingworld.tools.ui.OZUIElement;
 import de.omegazirkel.risingworld.tools.ui.table.TableCell;
@@ -26,6 +25,7 @@ import net.risingworld.api.Server;
 import net.risingworld.api.objects.Player;
 import net.risingworld.api.ui.UILabel;
 import net.risingworld.api.ui.UIScrollView;
+import net.risingworld.api.ui.UITarget;
 import net.risingworld.api.ui.UIScrollView.ScrollViewMode;
 import net.risingworld.api.ui.style.Align;
 import net.risingworld.api.ui.style.DisplayStyle;
@@ -77,13 +77,14 @@ public class PluginGUI {
 
     public void openWallet(Player player) {
         if (plugin == null || service == null) {
-            player.sendTextMessage(t().get("TC_WALLET_ERR_DATABASE_UNAVAILABLE", player));
+            player.sendTextMessage(t().get("tc.wallet.err.database.unavailable", player));
             return;
         }
-        closeWallet(player);
+        if (player.hasAttribute(OVERLAY_ATTRIBUTE)) {
+            player.deleteAttribute(OVERLAY_ATTRIBUTE);
+        }
         WalletOverlay overlay = new WalletOverlay(player, plugin, service);
-        CursorManager.show(player);
-        player.addUIElement(overlay);
+        player.addUIElement(overlay, UITarget.Modal);
         player.setAttribute(OVERLAY_ATTRIBUTE, overlay);
     }
 
@@ -92,7 +93,7 @@ public class PluginGUI {
         if (existing instanceof WalletOverlay overlay) {
             player.removeUIElement(overlay);
             player.deleteAttribute(OVERLAY_ATTRIBUTE);
-            CursorManager.hide(player);
+            player.closeAllActiveUIWindows();
         }
     }
 

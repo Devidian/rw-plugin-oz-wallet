@@ -155,7 +155,6 @@ class WalletRuntime extends Plugin {
 
     public void onSettingsChanged(Path settingsPath) {
         s.initSettings(settingsPath.toString());
-        logger().setLevel(s.logLevel);
         if (walletService != null) {
             walletService.registerCurrency(
                     s.defaultCurrencyIdentifier,
@@ -199,7 +198,7 @@ class WalletRuntime extends Plugin {
 
         if (s.enableWelcomeMessage) {
             String lang = de.omegazirkel.risingworld.OZTools.getPlayerLanguage(player);
-            player.sendTextMessage(t.get("TC_MSG_PLUGIN_WELCOME", lang)
+            player.sendTextMessage(t.get("tc.msg.plugin.welcome", lang)
                     .replace("PH_PLUGIN_NAME", getDescription("name"))
                     .replace("PH_PLUGIN_CMD", s.walletCommand)
                     .replace("PH_PLUGIN_VERSION", getDescription("version")));
@@ -248,7 +247,7 @@ class WalletRuntime extends Plugin {
         }
 
         String lang = de.omegazirkel.risingworld.OZTools.getPlayerLanguage(player);
-        player.sendTextMessage(t.get("TC_WALLET_WELCOME_BONUS_GRANTED", lang)
+        player.sendTextMessage(t.get("tc.wallet.welcome.bonus.granted", lang)
                 .replace("PH_AMOUNT", Long.toString(s.welcomeBonusAmount))
                 .replace("PH_CURRENCY", defaultCurrencyIdentifier()));
     }
@@ -555,7 +554,7 @@ class WalletRuntime extends Plugin {
 
         WalletCurrencyHud hud = new WalletCurrencyHud(
                 player,
-                t.get("TC_WALLET_INVENTORY_PANEL_TITLE", player),
+                t.get("tc.wallet.inventory.panel.title", player),
                 balances);
         player.addUIElement(hud, UITarget.Inventory);
         player.setAttribute(WalletCurrencyHud.ATTRIBUTE_KEY, hud);

@@ -32,7 +32,7 @@ public class WalletPlayerPluginSettings extends PlayerPluginSettings {
 
             protected OZUIElement shortcutSetting(Player uiPlayer) {
                 OZUIElement element = defaultSettingsContainer();
-                element.addChild(defaultSettingsLabel(t().get("TC_LABEL_WALLET_SHORTCUT", uiPlayer)));
+                element.addChild(defaultSettingsLabel(t().get("tc.label.wallet.shortcut", uiPlayer)));
                 boolean visible = shortcutVisible(uiPlayer);
                 element.addChild(switchButtons(uiPlayer, visible, event -> {
                     if (Wallet.playerSettings() != null) {
@@ -45,7 +45,7 @@ public class WalletPlayerPluginSettings extends PlayerPluginSettings {
 
             protected OZUIElement playerSettingShowWalletHud(Player uiPlayer) {
                 OZUIElement element = defaultSettingsContainer();
-                element.addChild(defaultSettingsLabel(t().get("TC_LABEL_SHOW_WALLET_HUD", uiPlayer)));
+                element.addChild(defaultSettingsLabel(t().get("tc.label.show.wallet.hud", uiPlayer)));
 
                 boolean currentValue = Wallet.isWalletHudEnabled(uiPlayer);
                 uiPlayer.setAttribute(SHOW_WALLET_HUD_KEY, currentValue);
@@ -58,7 +58,7 @@ public class WalletPlayerPluginSettings extends PlayerPluginSettings {
                     uiPlayer.setAttribute(SHOW_WALLET_HUD_KEY, nextValue);
                     Wallet.syncWalletHud(uiPlayer);
                     redrawContent();
-                }, t().get("TC_BTN_WALLET_HUD_OFF", uiPlayer), t().get("TC_BTN_WALLET_HUD_ON", uiPlayer)));
+                }, t().get("tc.btn.wallet.hud.off", uiPlayer), t().get("tc.btn.wallet.hud.on", uiPlayer)));
                 return element;
             }
         };

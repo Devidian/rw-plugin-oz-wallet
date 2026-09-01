@@ -8,12 +8,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
-import org.apache.logging.log4j.Level;
-
 import de.omegazirkel.risingworld.Wallet;
 import de.omegazirkel.risingworld.tools.OZLogger;
 import de.omegazirkel.risingworld.tools.settings.AdminSettingsEntry;
 import de.omegazirkel.risingworld.tools.settings.AdminSettingsType;
+import de.omegazirkel.risingworld.tools.settings.JsonSettingsFile;
 import de.omegazirkel.risingworld.tools.settings.SettingsFileEditor;
 
 public class PluginSettings {
@@ -31,8 +30,6 @@ public class PluginSettings {
     public boolean welcomeBonusAmountValid = true;
     public int auditLogLimit = 50;
     public String auditLanguage = "en";
-    public String logLevel = Level.ALL.name();
-    public boolean reloadOnChange = true;
 
     private static OZLogger logger() {
         return Wallet.logger();
@@ -54,25 +51,21 @@ public class PluginSettings {
     }
 
     public void initSettings() {
-        initSettings((plugin.getPath() != null ? plugin.getPath() : ".") + "/settings.properties");
+        initSettings(JsonSettingsFile.worldSettingsFile(plugin.getPath() != null ? plugin.getPath() : ".").toString());
     }
 
     public void initSettings(String filePath) {
         Path settingsFile = Paths.get(filePath);
-        Path defaultSettingsFile = settingsFile.resolveSibling("settings.default.properties");
+        Path defaultSettingsFile = settingsFile.resolveSibling("settings.default.json");
+        Path legacySettingsFile = settingsFile.resolveSibling("settings.properties");
 
         try {
-            if (Files.notExists(settingsFile) && Files.exists(defaultSettingsFile)) {
-                logger().info("settings.properties not found, copying from settings.default.properties...");
-                Files.copy(defaultSettingsFile, settingsFile);
-            }
-
-            Properties settings = new Properties();
-            if (Files.exists(settingsFile)) {
-                try (FileInputStream in = new FileInputStream(settingsFile.toFile())) {
-                    settings.load(new InputStreamReader(in, "UTF8"));
-                }
-            } else {
+            if (JsonSettingsFile.migrateLegacyProperties(legacySettingsFile, settingsFile))
+                logger().info("Migrated legacy settings.properties to " + settingsFile.getFileName());
+            if (Files.notExists(settingsFile) && Files.exists(defaultSettingsFile))
+                JsonSettingsFile.writeFlatAtomically(settingsFile, JsonSettingsFile.loadFlat(defaultSettingsFile));
+            Properties settings = loadSettings(settingsFile);
+            if (settings.isEmpty()) {
                 logger().warn("Neither settings.properties nor settings.default.properties found. Using default values.");
             }
 
@@ -80,7 +73,6 @@ public class PluginSettings {
             defaultCurrencyName = settings.getProperty("defaultCurrency.name", defaultCurrencyName);
             defaultCurrencyIcon = settings.getProperty("defaultCurrency.icon", defaultCurrencyIcon);
             walletCommand = settings.getProperty("walletCommand", walletCommand);
-            reloadOnChange = settings.getProperty("reloadOnChange", "true").contentEquals("true");
             enableWelcomeMessage = settings.getProperty("sendPluginWelcome", "false").contentEquals("true");
             welcomeBonusEnabled = settings.getProperty("welcomeBonus.enabled", "true").contentEquals("true");
             welcomeBonusAmountValid = true;
@@ -113,7 +105,6 @@ public class PluginSettings {
             }
             String configuredAuditLanguage = settings.getProperty("wallet-audit-language", "en").trim().toLowerCase();
             auditLanguage = configuredAuditLanguage.equals("de") ? "de" : "en";
-            logLevel = settings.getProperty("logLevel", "ALL");
 
             logger().info(plugin.getName() + " Plugin settings loaded");
             logger().info("Default currency is " + defaultCurrencyIdentifier + " (" + defaultCurrencyName + ")");
@@ -121,8 +112,6 @@ public class PluginSettings {
             logger().info("Welcome bonus is " + (welcomeBonusEnabled ? "enabled" : "disabled")
                     + " with amount " + welcomeBonusAmount + " " + defaultCurrencyIdentifier);
             logger().info("Audit log limit is " + (auditLogLimit == 0 ? "unlimited" : auditLogLimit));
-            logger().info("Loglevel is set to " + logLevel);
-            logger().setLevel(logLevel);
         } catch (IOException ex) {
             logger().error("IOException on initSettings: " + ex.getMessage());
             ex.printStackTrace();
@@ -134,12 +123,7 @@ public class PluginSettings {
 
     public java.util.List<AdminSettingsEntry> adminSettingsEntries() {
         return java.util.List.of(
-                AdminSettingsEntry.group("general", "General", "Logging, reload, command, and welcome behavior."),
-                entry("logLevel", "Log level", "Controls Wallet logging verbosity.", logLevel, "ALL",
-                        AdminSettingsType.STRING),
-                entry("reloadOnChange", "Reload on change",
-                        "Documents that Wallet settings reload when settings.properties changes.", reloadOnChange,
-                        "true", AdminSettingsType.BOOLEAN),
+                AdminSettingsEntry.group("general", "General", "Command and welcome behavior."),
                 entry("walletCommand", "Wallet command", "Chat command used to open the wallet.", walletCommand,
                         "wallet", AdminSettingsType.STRING),
                 entry("sendPluginWelcome", "Welcome message", "Shows a short wallet message when a player joins.",
@@ -185,6 +169,15 @@ public class PluginSettings {
     }
 
     private Path settingsPath() {
-        return Paths.get((plugin.getPath() != null ? plugin.getPath() : ".") + "/settings.properties");
+        return JsonSettingsFile.worldSettingsFile(plugin.getPath() != null ? plugin.getPath() : ".");
+    }
+
+    private Properties loadSettings(Path file) throws IOException {
+        if (!file.getFileName().toString().endsWith(".properties")) return JsonSettingsFile.loadProperties(file);
+        Properties properties = new Properties();
+        if (Files.exists(file)) try (FileInputStream input = new FileInputStream(file.toFile())) {
+            properties.load(new InputStreamReader(input, "UTF8"));
+        }
+        return properties;
     }
 }

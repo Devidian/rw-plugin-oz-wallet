@@ -24,7 +24,7 @@ public class WalletPluginInfoStatusProvider implements PluginInfoStatusProvider 
     @Override
     public String getInfo(Player player) {
         PluginSettings settings = PluginSettings.getInstance();
-        return t().get("TC_WALLET_INFO_PANEL_INFO", player)
+        return t().get("tc.wallet.info.panel.info", player)
                 .replace("PH_PLUGIN_NAME", pluginName)
                 .replace("PH_VERSION", version)
                 .replace("PH_PLUGIN_CMD", settings.walletCommand);
@@ -33,7 +33,7 @@ public class WalletPluginInfoStatusProvider implements PluginInfoStatusProvider 
     @Override
     public String getStatus(Player player) {
         PluginSettings settings = PluginSettings.getInstance();
-        return t().get("TC_WALLET_INFO_PANEL_STATUS", player)
+        return t().get("tc.wallet.info.panel.status", player)
                 .replace("PH_DATABASE_STATUS", plugin.databaseAvailable() ? "available" : "missing")
                 .replace("PH_DEFAULT_CURRENCY", plugin.defaultCurrencyIdentifier())
                 .replace("PH_DEFAULT_CURRENCY_NAME", settings.defaultCurrencyName)

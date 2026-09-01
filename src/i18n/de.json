@@ -1,0 +1,192 @@
+{
+  "tc": {
+    "btn": {
+      "wallet": {
+        "hud": {
+          "off": "Aus",
+          "on": "An"
+        }
+      }
+    },
+    "cmd": {
+      "help": "Hilfe:\nVerfügbare Chat-Kommandos:\n\u003ccolor\u003dred\u003e/PH_PLUGIN_CMD status\u003c/color\u003e zeigt plugin infos an\n\u003ccolor\u003dred\u003e/PH_PLUGIN_CMD open\u003c/color\u003e öffnet das Pluginmenü\n\u003ccolor\u003dred\u003e/PH_PLUGIN_CMD help\u003c/color\u003e zeigt diese Hilfe an\n\n\u003ccolor\u003dyellow\u003eTipp:\u003c/color\u003e Binde den Befehl \u003ccolor\u003dred\u003e/PH_PLUGIN_CMD open\u003c/color\u003e an eine Taste der Maus oder Tastatur.",
+      "status": "🔎 Plugin Status\n➡️ Plugin version: PH_VERSION\n➡️ Installierte Sprachen: PH_LANG_AVAILABLE\n➡️ Deine Sprache: PH_LANGUAGE\n➡️ Verwendete Sprache: PH_USEDLANG"
+    },
+    "err": {
+      "cmd": {
+        "unknown": "Unbekanntes Kommando tippe \u003ccolor\u003dred\u003e/PH_PLUGIN_CMD help\u003c/color\u003e für Hilfe."
+      }
+    },
+    "label": {
+      "show": {
+        "wallet": {
+          "hud": "Geldbörse im Inventar anzeigen"
+        }
+      },
+      "wallet": {
+        "shortcut": "Wallet-Shortcut in /ozt und Inventar anzeigen"
+      }
+    },
+    "msg": {
+      "plugin": {
+        "welcome": "➡️ \u003ccolor\u003d#F00000\u003ePH_PLUGIN_NAME\u003c/color\u003e | \u003ccolor\u003d#F0F000\u003evPH_PLUGIN_VERSION\u003c/color\u003e | \u003ccolor\u003d#C0C0C0\u003e/PH_PLUGIN_CMD\u003c/color\u003e | geladen!"
+      }
+    },
+    "setting": {
+      "adminoverview": {
+        "desc": "Anzeigeverhalten der Admin-Wallet-Übersicht.",
+        "label": "Admin-Übersicht"
+      },
+      "auditloglimit": {
+        "desc": "Maximale Anzahl angezeigter Wallet-Audit-Zeilen.",
+        "label": "Audit-Log-Limit"
+      },
+      "currency": {
+        "desc": "Registrierung der Standard-Wallet-Währung.",
+        "label": "Standardwährung"
+      },
+      "defaultcurrency": {
+        "icon": {
+          "desc": "Asset-Icon für die Standard-Wallet-Währung.",
+          "label": "Währungs-Icon"
+        },
+        "identifier": {
+          "desc": "Kennung der Standard-Wallet-Währung.",
+          "label": "Währungskennung"
+        },
+        "name": {
+          "desc": "Anzeigename der Standard-Wallet-Währung.",
+          "label": "Währungsname"
+        }
+      },
+      "general": {
+        "desc": "Protokollierung, Reload, Befehl und Willkommensverhalten.",
+        "label": "Allgemein"
+      },
+      "loglevel": {
+        "desc": "Steuert die Wallet-Logging-Ausgabe.",
+        "label": "Log-Level"
+      },
+      "reloadonchange": {
+        "desc": "Dokumentiert, dass Wallet-Einstellungen bei Änderungen an settings.properties neu geladen werden.",
+        "label": "Bei Änderung neu laden"
+      },
+      "sendpluginwelcome": {
+        "desc": "Zeigt beim Betreten eine kurze Wallet-Nachricht.",
+        "label": "Willkommensnachricht"
+      },
+      "walletcommand": {
+        "desc": "Chat-Befehl zum Öffnen der Wallet.",
+        "label": "Wallet-Befehl"
+      },
+      "welcomebonus": {
+        "amount": {
+          "desc": "Betrag für den Bonus beim ersten Betreten.",
+          "label": "Willkommensbonus-Betrag"
+        },
+        "desc": "Wallet-Bonusverhalten beim ersten Beitritt.",
+        "enabled": {
+          "desc": "Aktiviert den Bonus beim ersten Betreten.",
+          "label": "Willkommensbonus"
+        },
+        "label": "Willkommensbonus"
+      }
+    },
+    "wallet": {
+      "back": "Zurück",
+      "close": "Schließen",
+      "col": {
+        "account": {
+          "$value": "Konto",
+          "id": "Konto-ID"
+        },
+        "actions": "Aktionen",
+        "amount": "Betrag",
+        "currency": "Währung",
+        "date": "Datum (GMT)",
+        "global": {
+          "balance": "Weltguthaben"
+        },
+        "identifier": "Kennung",
+        "player": "Spieler",
+        "rank": "Rang",
+        "reason": "Grund",
+        "source": "Quelle",
+        "status": "Status",
+        "type": "Typ"
+      },
+      "default": {
+        "currency": {
+          "hint": "(Standardwährung)"
+        }
+      },
+      "empty": {
+        "balances": "Noch kein Guthaben vorhanden.",
+        "global": {
+          "balances": "Noch kein Weltguthaben vorhanden."
+        },
+        "system": {
+          "accounts": "Keine Systemkonten gefunden.",
+          "transactions": "Noch keine Systemkonto-Transaktionen vorhanden."
+        },
+        "top": {
+          "balances": "Noch keine positiven Standardwährungs-Guthaben vorhanden."
+        },
+        "transactions": "Noch keine Transaktionen vorhanden."
+      },
+      "err": {
+        "database": {
+          "unavailable": "OZ - Wallet: Wallet-Datenbank ist nicht verfügbar."
+        },
+        "load": {
+          "balances": "Guthaben konnten nicht geladen werden.",
+          "system": {
+            "accounts": "Systemkonten konnten nicht geladen werden."
+          },
+          "transactions": "Transaktionen konnten nicht geladen werden."
+        }
+      },
+      "info": {
+        "panel": {
+          "info": "\u003cb\u003ePH_PLUGIN_NAME\u003c/b\u003e\nVersion: PH_VERSION\nBefehl: /PH_PLUGIN_CMD\n\nWallet verwaltet Währungen, Spieler-Guthaben, Transaktionshistorie und Economy-APIs für andere Plugins.",
+          "status": "\u003cb\u003eWallet Status\u003c/b\u003e\nDatenbank: PH_DATABASE_STATUS\nStandardwährung: PH_DEFAULT_CURRENCY (PH_DEFAULT_CURRENCY_NAME)\nInventar-HUD: PH_WALLET_HUD\nWillkommensbonus: PH_WELCOME_BONUS\nWillkommensbonus-Betrag: PH_WELCOME_BONUS_AMOUNT\nAudit-Log-Limit: PH_AUDIT_LOG_LIMIT"
+        }
+      },
+      "inventory": {
+        "panel": {
+          "title": "Geldbörse"
+        }
+      },
+      "page": "Seite PH_PAGE / PH_PAGES",
+      "search": "Suchen",
+      "source": {
+        "prefix": "Quelle: PH_SOURCE"
+      },
+      "system": {
+        "transactions": "Transaktionen"
+      },
+      "tab": {
+        "admin": {
+          "transactions": "Audit-Log"
+        },
+        "balances": "Guthaben",
+        "global": {
+          "balances": "Globales-Guthaben"
+        },
+        "system": {
+          "accounts": "Systemkonten"
+        },
+        "top": {
+          "balances": "Top-Guthaben"
+        },
+        "transactions": "Transaktionen"
+      },
+      "title": "Wallet",
+      "welcome": {
+        "bonus": {
+          "granted": "Willkommensbonus erhalten: PH_AMOUNT PH_CURRENCY"
+        }
+      }
+    }
+  }
+}

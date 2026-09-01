@@ -63,7 +63,7 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
     private static final int SYSTEM_ACCOUNT_PAGE_SIZE = 50;
 
     public WalletOverlay(Player player, Wallet plugin, WalletService service) {
-        super(player, p -> { });
+        super(player, p -> p.deleteAttribute("wallet.ui.overlay"));
         this.plugin = plugin;
         this.service = service;
         dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
@@ -77,7 +77,7 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
 
     @Override
     protected String titleText() {
-        return t().get("TC_WALLET_TITLE", uiPlayer);
+        return t().get("tc.wallet.title", uiPlayer);
     }
 
     @Override
@@ -93,13 +93,13 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
     @Override
     protected void setupTabs() {
         setupTabContainer();
-        addTab(t().get("TC_WALLET_TAB_BALANCES", uiPlayer), 150, "balances".equals(activeWalletTab), () -> selectTab("balances"));
-        addTab(t().get("TC_WALLET_TAB_TRANSACTIONS", uiPlayer), 185, "transactions".equals(activeWalletTab), () -> selectTab("transactions"));
+        addTab(t().get("tc.wallet.tab.balances", uiPlayer), 150, "balances".equals(activeWalletTab), () -> selectTab("balances"));
+        addTab(t().get("tc.wallet.tab.transactions", uiPlayer), 185, "transactions".equals(activeWalletTab), () -> selectTab("transactions"));
         if (uiPlayer.isAdmin()) {
-            addTab(t().get("TC_WALLET_TAB_ADMIN_TRANSACTIONS", uiPlayer), 160, "adminTransactions".equals(activeWalletTab), true, () -> selectTab("adminTransactions"));
-            addTab(t().get("TC_WALLET_TAB_GLOBAL_BALANCES", uiPlayer), 190, "globalBalances".equals(activeWalletTab), true, () -> selectTab("globalBalances"));
-            addTab(t().get("TC_WALLET_TAB_TOP_BALANCES", uiPlayer), 160, "topBalances".equals(activeWalletTab), true, () -> selectTab("topBalances"));
-            addTab(t().get("TC_WALLET_TAB_SYSTEM_ACCOUNTS", uiPlayer), 150,
+            addTab(t().get("tc.wallet.tab.admin.transactions", uiPlayer), 160, "adminTransactions".equals(activeWalletTab), true, () -> selectTab("adminTransactions"));
+            addTab(t().get("tc.wallet.tab.global.balances", uiPlayer), 190, "globalBalances".equals(activeWalletTab), true, () -> selectTab("globalBalances"));
+            addTab(t().get("tc.wallet.tab.top.balances", uiPlayer), 160, "topBalances".equals(activeWalletTab), true, () -> selectTab("topBalances"));
+            addTab(t().get("tc.wallet.tab.system.accounts", uiPlayer), 150,
                     "systemAccounts".equals(activeWalletTab), true, () -> selectTab("systemAccounts"));
         }
         showActiveTab();
@@ -132,7 +132,7 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
                     uiPlayer.getDbID(),
                     plugin.getSettings().defaultCurrencyIdentifier);
             if (balances.isEmpty()) {
-                body.addChild(message(t().get("TC_WALLET_EMPTY_BALANCES", uiPlayer)));
+                body.addChild(message(t().get("tc.wallet.empty.balances", uiPlayer)));
                 return;
             }
 
@@ -158,7 +158,7 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
             body.addChild(scrollView);
         } catch (SQLException ex) {
             Wallet.logger().error("Failed to render wallet balances: " + ex.getMessage());
-            body.addChild(message(t().get("TC_WALLET_ERR_LOAD_BALANCES", uiPlayer)));
+            body.addChild(message(t().get("tc.wallet.err.load.balances", uiPlayer)));
         }
     }
 
@@ -168,16 +168,16 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
         try {
             List<WalletTransaction> transactions = service.listLatestTransactions(uiPlayer.getDbID(), 100);
             if (transactions.isEmpty()) {
-                body.addChild(message(t().get("TC_WALLET_EMPTY_TRANSACTIONS", uiPlayer)));
+                body.addChild(message(t().get("tc.wallet.empty.transactions", uiPlayer)));
                 return;
             }
             TableScrollView table = new TableScrollView(
                     Arrays.asList(
-                            t().get("TC_WALLET_COL_AMOUNT", uiPlayer),
-                            t().get("TC_WALLET_COL_CURRENCY", uiPlayer),
-                            t().get("TC_WALLET_COL_SOURCE", uiPlayer),
-                            t().get("TC_WALLET_COL_REASON", uiPlayer),
-                            t().get("TC_WALLET_COL_DATE", uiPlayer)),
+                            t().get("tc.wallet.col.amount", uiPlayer),
+                            t().get("tc.wallet.col.currency", uiPlayer),
+                            t().get("tc.wallet.col.source", uiPlayer),
+                            t().get("tc.wallet.col.reason", uiPlayer),
+                            t().get("tc.wallet.col.date", uiPlayer)),
                     Arrays.asList(12f, 20f, 18f, 32f, 18f));
             table.setPosition(0, 0, false);
             table.style.width.set(100, Unit.Percent);
@@ -193,7 +193,7 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
             body.addChild(table.getRoot());
         } catch (SQLException ex) {
             Wallet.logger().error("Failed to render wallet transactions: " + ex.getMessage());
-            body.addChild(message(t().get("TC_WALLET_ERR_LOAD_TRANSACTIONS", uiPlayer)));
+            body.addChild(message(t().get("tc.wallet.err.load.transactions", uiPlayer)));
         }
     }
 
@@ -206,17 +206,17 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
         try {
             List<WalletTransaction> transactions = service.listLatestGlobalTransactions(plugin.getSettings().auditLogLimit);
             if (transactions.isEmpty()) {
-                body.addChild(message(t().get("TC_WALLET_EMPTY_TRANSACTIONS", uiPlayer)));
+                body.addChild(message(t().get("tc.wallet.empty.transactions", uiPlayer)));
                 return;
             }
             TableScrollView table = new TableScrollView(
                     Arrays.asList(
-                            t().get("TC_WALLET_COL_PLAYER", uiPlayer),
-                            t().get("TC_WALLET_COL_AMOUNT", uiPlayer),
-                            t().get("TC_WALLET_COL_CURRENCY", uiPlayer),
-                            t().get("TC_WALLET_COL_SOURCE", uiPlayer),
-                            t().get("TC_WALLET_COL_REASON", uiPlayer),
-                            t().get("TC_WALLET_COL_DATE", uiPlayer)),
+                            t().get("tc.wallet.col.player", uiPlayer),
+                            t().get("tc.wallet.col.amount", uiPlayer),
+                            t().get("tc.wallet.col.currency", uiPlayer),
+                            t().get("tc.wallet.col.source", uiPlayer),
+                            t().get("tc.wallet.col.reason", uiPlayer),
+                            t().get("tc.wallet.col.date", uiPlayer)),
                     Arrays.asList(16f, 11f, 18f, 16f, 25f, 14f));
             table.setPosition(0, 0, false);
             table.style.width.set(100, Unit.Percent);
@@ -233,7 +233,7 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
             body.addChild(table.getRoot());
         } catch (SQLException ex) {
             Wallet.logger().error("Failed to render wallet admin transactions: " + ex.getMessage());
-            body.addChild(message(t().get("TC_WALLET_ERR_LOAD_TRANSACTIONS", uiPlayer)));
+            body.addChild(message(t().get("tc.wallet.err.load.transactions", uiPlayer)));
         }
     }
 
@@ -246,15 +246,15 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
         try {
             List<WalletBalance> balances = service.listGlobalBalances();
             if (balances.isEmpty()) {
-                body.addChild(message(t().get("TC_WALLET_EMPTY_GLOBAL_BALANCES", uiPlayer)));
+                body.addChild(message(t().get("tc.wallet.empty.global.balances", uiPlayer)));
                 return;
             }
             TableScrollView table = new TableScrollView(
                     Arrays.asList(
-                            t().get("TC_WALLET_COL_CURRENCY", uiPlayer),
-                            t().get("TC_WALLET_COL_IDENTIFIER", uiPlayer),
-                            t().get("TC_WALLET_COL_GLOBAL_BALANCE", uiPlayer),
-                            t().get("TC_WALLET_COL_SOURCE", uiPlayer)),
+                            t().get("tc.wallet.col.currency", uiPlayer),
+                            t().get("tc.wallet.col.identifier", uiPlayer),
+                            t().get("tc.wallet.col.global.balance", uiPlayer),
+                            t().get("tc.wallet.col.source", uiPlayer)),
                     Arrays.asList(32f, 18f, 24f, 26f));
             table.setPosition(0, 0, false);
             table.style.width.set(100, Unit.Percent);
@@ -270,7 +270,7 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
             body.addChild(table.getRoot());
         } catch (SQLException ex) {
             Wallet.logger().error("Failed to render wallet global balances: " + ex.getMessage());
-            body.addChild(message(t().get("TC_WALLET_ERR_LOAD_BALANCES", uiPlayer)));
+            body.addChild(message(t().get("tc.wallet.err.load.balances", uiPlayer)));
         }
     }
 
@@ -287,7 +287,7 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
             }
             List<WalletBalance> balances = service.listTopBalances(plugin.getSettings().defaultCurrencyIdentifier, 20);
             if (balances.isEmpty()) {
-                body.addChild(message(t().get("TC_WALLET_EMPTY_TOP_BALANCES", uiPlayer)));
+                body.addChild(message(t().get("tc.wallet.empty.top.balances", uiPlayer)));
                 return;
             }
             Set<Integer> playerDbIds = new LinkedHashSet<>();
@@ -297,13 +297,13 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
             Map<Integer, PlayerRecord> playerRecords = PlayerDatabaseHelper.findPlayersByDbIds(plugin, playerDbIds);
             TableScrollView table = new TableScrollView(
                     Arrays.asList(
-                            t().get("TC_WALLET_COL_RANK", uiPlayer),
-                            t().get("TC_WALLET_COL_PLAYER", uiPlayer),
-                            t().get("TC_WALLET_COL_AMOUNT", uiPlayer),
-                            t().get("TC_WALLET_COL_CURRENCY", uiPlayer),
-                            t().get("TC_WALLET_COL_IDENTIFIER", uiPlayer),
-                            t().get("TC_WALLET_COL_SOURCE", uiPlayer),
-                            t().get("TC_WALLET_COL_ACTIONS", uiPlayer)),
+                            t().get("tc.wallet.col.rank", uiPlayer),
+                            t().get("tc.wallet.col.player", uiPlayer),
+                            t().get("tc.wallet.col.amount", uiPlayer),
+                            t().get("tc.wallet.col.currency", uiPlayer),
+                            t().get("tc.wallet.col.identifier", uiPlayer),
+                            t().get("tc.wallet.col.source", uiPlayer),
+                            t().get("tc.wallet.col.actions", uiPlayer)),
                     Arrays.asList(7f, 22f, 14f, 18f, 12f, 15f, 12f));
             table.setPosition(0, 0, false);
             table.style.width.set(100, Unit.Percent);
@@ -324,12 +324,12 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
             body.addChild(table.getRoot());
         } catch (SQLException ex) {
             Wallet.logger().error("Failed to render wallet top balances: " + ex.getMessage());
-            body.addChild(message(t().get("TC_WALLET_ERR_LOAD_BALANCES", uiPlayer)));
+            body.addChild(message(t().get("tc.wallet.err.load.balances", uiPlayer)));
         }
     }
 
     private void showPlayerTransactions(int playerDbId) {
-        AdvancedButton back = actionButton(t().get("TC_WALLET_BACK", uiPlayer), () -> {
+        AdvancedButton back = actionButton(t().get("tc.wallet.back", uiPlayer), () -> {
             playerTransactionDetailDbId = null;
             rebuild();
         });
@@ -341,17 +341,17 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
             transactions = service.listLatestTransactions(playerDbId, 100);
         } catch (SQLException ex) {
             Wallet.logger().error("Failed to render player transactions: " + ex.getMessage());
-            body.addChild(message(t().get("TC_WALLET_ERR_LOAD_TRANSACTIONS", uiPlayer)));
+            body.addChild(message(t().get("tc.wallet.err.load.transactions", uiPlayer)));
             return;
         }
         if (transactions.isEmpty()) {
-            body.addChild(message(t().get("TC_WALLET_EMPTY_TRANSACTIONS", uiPlayer)));
+            body.addChild(message(t().get("tc.wallet.empty.transactions", uiPlayer)));
             return;
         }
         TableScrollView table = new TableScrollView(Arrays.asList(
-                t().get("TC_WALLET_COL_AMOUNT", uiPlayer), t().get("TC_WALLET_COL_CURRENCY", uiPlayer),
-                t().get("TC_WALLET_COL_SOURCE", uiPlayer), t().get("TC_WALLET_COL_REASON", uiPlayer),
-                t().get("TC_WALLET_COL_DATE", uiPlayer)), Arrays.asList(12f, 18f, 18f, 34f, 18f));
+                t().get("tc.wallet.col.amount", uiPlayer), t().get("tc.wallet.col.currency", uiPlayer),
+                t().get("tc.wallet.col.source", uiPlayer), t().get("tc.wallet.col.reason", uiPlayer),
+                t().get("tc.wallet.col.date", uiPlayer)), Arrays.asList(12f, 18f, 18f, 34f, 18f));
         table.setPosition(12, 56, false);
         table.style.width.set(98, Unit.Percent);
         table.setScrollBodyHeight(330f);
@@ -382,7 +382,7 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
         search.setBorderColor(0.95f, 0.75f, 0.25f, 0.46f);
         body.addChild(search);
 
-        AdvancedButton searchButton = actionButton(t().get("TC_WALLET_SEARCH", uiPlayer), () ->
+        AdvancedButton searchButton = actionButton(t().get("tc.wallet.search", uiPlayer), () ->
                 search.getCurrentText(uiPlayer, value -> {
                     systemAccountSearch = value == null ? "" : value.trim();
                     systemAccountOffset = 0;
@@ -395,20 +395,20 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
         SystemAccountsResult accounts = service.listSystemAccounts(systemAccountSearch, systemAccountOffset,
                 SYSTEM_ACCOUNT_PAGE_SIZE);
         if (!accounts.success) {
-            body.addChild(message(t().get("TC_WALLET_ERR_LOAD_SYSTEM_ACCOUNTS", uiPlayer)));
+            body.addChild(message(t().get("tc.wallet.err.load.system.accounts", uiPlayer)));
             return;
         }
         if (accounts.accounts.isEmpty()) {
-            body.addChild(message(t().get("TC_WALLET_EMPTY_SYSTEM_ACCOUNTS", uiPlayer)));
+            body.addChild(message(t().get("tc.wallet.empty.system.accounts", uiPlayer)));
             return;
         }
 
         TableScrollView table = new TableScrollView(
-                Arrays.asList(t().get("TC_WALLET_COL_ACCOUNT_ID", uiPlayer),
-                        t().get("TC_WALLET_COL_ACCOUNT", uiPlayer),
-                        t().get("TC_WALLET_COL_TYPE", uiPlayer), t().get("TC_WALLET_COL_SOURCE", uiPlayer),
-                        t().get("TC_WALLET_COL_STATUS", uiPlayer), t().get("TC_WALLET_COL_AMOUNT", uiPlayer),
-                        t().get("TC_WALLET_COL_ACTIONS", uiPlayer)),
+                Arrays.asList(t().get("tc.wallet.col.account.id", uiPlayer),
+                        t().get("tc.wallet.col.account", uiPlayer),
+                        t().get("tc.wallet.col.type", uiPlayer), t().get("tc.wallet.col.source", uiPlayer),
+                        t().get("tc.wallet.col.status", uiPlayer), t().get("tc.wallet.col.amount", uiPlayer),
+                        t().get("tc.wallet.col.actions", uiPlayer)),
                 Arrays.asList(18f, 20f, 10f, 14f, 10f, 14f, 14f));
         table.setPosition(12, 56, false);
         table.style.width.set(98, Unit.Percent);
@@ -425,7 +425,7 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
         int page = systemAccountOffset / SYSTEM_ACCOUNT_PAGE_SIZE + 1;
         int pages = Math.max(1, (accounts.total + SYSTEM_ACCOUNT_PAGE_SIZE - 1) / SYSTEM_ACCOUNT_PAGE_SIZE);
         if (pages <= 1) return;
-        UILabel pageLabel = new UILabel(t().get("TC_WALLET_PAGE", uiPlayer)
+        UILabel pageLabel = new UILabel(t().get("tc.wallet.page", uiPlayer)
                 .replace("PH_PAGE", Integer.toString(page)).replace("PH_PAGES", Integer.toString(pages)));
         pageLabel.setPivot(Pivot.UpperCenter);
         pageLabel.setPosition(50, 0, true);
@@ -454,7 +454,7 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
     }
 
     private void showSystemAccountTransactions(String accountId) {
-        AdvancedButton back = actionButton(t().get("TC_WALLET_BACK", uiPlayer), () -> {
+        AdvancedButton back = actionButton(t().get("tc.wallet.back", uiPlayer), () -> {
             systemAccountDetailId = null;
             rebuild();
         });
@@ -464,14 +464,14 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
 
         SystemAccountTransactionsResult result = service.systemAccountTransactions(accountId, 100);
         if (!result.success || result.transactions.isEmpty()) {
-            body.addChild(message(t().get(result.success ? "TC_WALLET_EMPTY_SYSTEM_TRANSACTIONS"
-                    : "TC_WALLET_ERR_LOAD_TRANSACTIONS", uiPlayer)));
+            body.addChild(message(t().get(result.success ? "tc.wallet.empty.system.transactions"
+                    : "tc.wallet.err.load.transactions", uiPlayer)));
             return;
         }
         TableScrollView table = new TableScrollView(
-                Arrays.asList(t().get("TC_WALLET_COL_AMOUNT", uiPlayer),
-                        t().get("TC_WALLET_COL_CURRENCY", uiPlayer), t().get("TC_WALLET_COL_SOURCE", uiPlayer),
-                        t().get("TC_WALLET_COL_REASON", uiPlayer), t().get("TC_WALLET_COL_DATE", uiPlayer)),
+                Arrays.asList(t().get("tc.wallet.col.amount", uiPlayer),
+                        t().get("tc.wallet.col.currency", uiPlayer), t().get("tc.wallet.col.source", uiPlayer),
+                        t().get("tc.wallet.col.reason", uiPlayer), t().get("tc.wallet.col.date", uiPlayer)),
                 Arrays.asList(12f, 18f, 18f, 34f, 18f));
         table.setPosition(12, 56, false);
         table.style.width.set(98, Unit.Percent);
@@ -496,7 +496,7 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
     }
 
     private AdvancedButton detailButton(String accountId) {
-        AdvancedButton button = actionButton(t().get("TC_WALLET_SYSTEM_TRANSACTIONS", uiPlayer), () -> {
+        AdvancedButton button = actionButton(t().get("tc.wallet.system.transactions", uiPlayer), () -> {
             systemAccountDetailId = accountId;
             rebuild();
         });
@@ -505,7 +505,7 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
     }
 
     private AdvancedButton playerDetailButton(int playerDbId) {
-        AdvancedButton button = actionButton(t().get("TC_WALLET_SYSTEM_TRANSACTIONS", uiPlayer), () -> {
+        AdvancedButton button = actionButton(t().get("tc.wallet.system.transactions", uiPlayer), () -> {
             playerTransactionDetailDbId = playerDbId;
             rebuild();
         });
@@ -552,10 +552,10 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
         name.setTextWrap(false);
         card.addChild(name);
 
-        String sourceText = t().get("TC_WALLET_SOURCE_PREFIX", uiPlayer)
+        String sourceText = t().get("tc.wallet.source.prefix", uiPlayer)
                 .replace("PH_SOURCE", currency.getPluginIdentifier());
         if (currency.isDefaultCurrency()) {
-            sourceText += " " + t().get("TC_WALLET_DEFAULT_CURRENCY_HINT", uiPlayer);
+            sourceText += " " + t().get("tc.wallet.default.currency.hint", uiPlayer);
         }
         UILabel source = new UILabel(sourceText);
         source.setPivot(Pivot.UpperLeft);

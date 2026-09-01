@@ -63,14 +63,14 @@
         <dependency>
             <groupId>com.github.devidian</groupId>
             <artifactId>rw-plugin-oz-tools</artifactId>
-            <version>0.23.13</version>
+            <version> 0.23.14</version>
         </dependency>
 
         <!-- Rising World PluginAPI -->
         <dependency>
             <groupId>net.risingworld</groupId>
             <artifactId>PluginAPI</artifactId>
-            <version>0.9.2</version>
+            <version>0.9.3</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -148,7 +148,7 @@
                             <file>${project.basedir}/libs/PluginAPI.jar</file>
                             <groupId>net.risingworld</groupId>
                             <artifactId>PluginAPI</artifactId>
-                            <version>0.9.2</version>
+                            <version>0.9.3</version>
                             <packaging>jar</packaging>
                         </configuration>
                     </execution>
@@ -247,6 +247,7 @@
                                 <resource>
                                     <directory>${basedir}/src</directory>
                                     <includes>
+                                        <include>*.json</include>
                                         <include>*.properties</include>
                                     </includes>
                                 </resource>
@@ -285,7 +286,7 @@
                                 <resource>
                                     <directory>${basedir}/src/i18n</directory>
                                     <includes>
-                                        <include>**/*.properties</include>
+                                        <include>**/*.json</include>
                                     </includes>
                                 </resource>
                             </resources>

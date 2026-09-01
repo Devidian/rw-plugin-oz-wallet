@@ -1,0 +1,16 @@
+{
+  "auditLogLimit": "50",
+  "defaultCurrency": {
+    "icon": "coin-omega-gold",
+    "identifier": "OZC",
+    "name": "Omega Zirkel Coin"
+  },
+  "sendPluginWelcome": "false",
+  "wallet-audit-language": "en",
+  "walletCommand": "wallet",
+  "welcomeBonus": {
+    "amount": "100",
+    "enabled": "true"
+  },
+  "worldInitialCapital": "10000"
+}
