@@ -2,6 +2,10 @@
 
 <https://www.conventionalcommits.org/en/v1.0.0/>
 
+## [0.8.1] - 2026-09-05 | PluginAPI compatibility
+
+- build: update the bundled PluginAPI and default settings baseline for the native web release wave.
+
 ## [0.8.0] - 2026-08-10 | Annual world treasury
 
 - feat: issue a catch-up world-account treasury payment for every missing in-game year, scaled to game speed and days per month and protected by immutable per-year correlations.
