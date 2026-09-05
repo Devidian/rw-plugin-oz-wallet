@@ -5,6 +5,7 @@
 ## [0.8.1] - 2026-09-05 | PluginAPI compatibility
 
 - build: update the bundled PluginAPI and default settings baseline for the native web release wave.
+- change: migrate Wallet runtime settings and translations to JSON while retaining existing server configuration.
 
 ## [0.8.0] - 2026-08-10 | Annual world treasury
 
