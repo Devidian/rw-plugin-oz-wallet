@@ -234,7 +234,7 @@
                             </resources>
                         </configuration>
                     </execution>
-                    <!-- copy properties (settings.default) -->
+                    <!-- copy JSON settings defaults -->
                     <execution>
                         <id>copy-settings</id>
                         <phase>prepare-package</phase>
@@ -248,7 +248,6 @@
                                     <directory>${basedir}/src</directory>
                                     <includes>
                                         <include>*.json</include>
-                                        <include>*.properties</include>
                                     </includes>
                                 </resource>
                             </resources>

@@ -20,7 +20,7 @@ Wallet and economy state plugin for Rising World.
 
 ## Settings
 
-The plugin copies `settings.default.properties` to `settings.properties` on first run.
+The plugin copies `settings.default.json` to `settings.<world>.json` on first run.
 
 ```properties
 defaultCurrency.identifier=OZC
@@ -323,3 +323,13 @@ Deposits and withdrawals update balances and write the transaction row in one SQ
 - `scripts/verify-plugin-api.sh --summary`
 - `scripts/verify-plugin-api.sh --class <RisingWorldApiClass>` or `--method <RisingWorldApiClass#method>` for new API usage
 - `mvn -B test` when tests exist
+
+## JSON-only distribution
+
+Settings defaults (`settings.default.json`) and translations (`i18n/*.json`)
+are shipped only as JSON. Legacy default and translation `.properties` files
+are no longer included. Runtime settings remain world-scoped as
+`settings.<world>.json`; migration of an existing `settings.properties` and
+its backup remains supported. Updating the package does not delete old files
+already present on the server. Use `mvn clean package` for a fresh local
+package; ZIP assembly also excludes stale legacy settings and translations.
