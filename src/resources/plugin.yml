@@ -1,6 +1,6 @@
 name: "OZ - Wallet"
 main: de.omegazirkel.risingworld.Wallet
-version: 0.8.1
+version: 0.9.0
 author: "Maik 'Devidian' Laschober"
 team: "Omega Zirkel"
 description: "Wallet and economy state plugin"

@@ -93,6 +93,14 @@
       }
     },
     "wallet": {
+      "grant": {
+        "usage": "Verwendung: /PH_PLUGIN_CMD grant <Spieler-UID> <Betrag> [Währung]",
+        "not": { "admin": "Nur Administratoren können Wallet-Coins vergeben." },
+        "player": { "not": { "found": "Der Zielspieler muss online sein und über seine UID angegeben werden." } },
+        "failed": "Wallet-Vergabe fehlgeschlagen.",
+        "success": "PH_AMOUNT PH_CURRENCY an PH_PLAYER vergeben.",
+        "received": "Du hast PH_AMOUNT PH_CURRENCY von einem Administrator erhalten."
+      },
       "back": "Zurück",
       "close": "Schließen",
       "col": {

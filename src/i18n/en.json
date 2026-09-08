@@ -93,6 +93,14 @@
       }
     },
     "wallet": {
+      "grant": {
+        "usage": "Usage: /PH_PLUGIN_CMD grant <player UID> <amount> [currency]",
+        "not": { "admin": "Only administrators can grant Wallet coins." },
+        "player": { "not": { "found": "The target player must be online and identified by UID." } },
+        "failed": "Wallet grant failed.",
+        "success": "Granted PH_AMOUNT PH_CURRENCY to PH_PLAYER.",
+        "received": "You received PH_AMOUNT PH_CURRENCY from an administrator."
+      },
       "back": "Back",
       "close": "Close",
       "col": {

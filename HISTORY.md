@@ -2,6 +2,10 @@
 
 <https://www.conventionalcommits.org/en/v1.0.0/>
 
+## [0.9.0] - 2026-09-08 | Administrator grants
+
+- feat: allow administrators to grant a positive Wallet amount to an online player with a durable audit reason.
+
 ## [0.8.1] - 2026-09-05 | PluginAPI compatibility
 
 - build: update the bundled PluginAPI and default settings baseline for the native web release wave.

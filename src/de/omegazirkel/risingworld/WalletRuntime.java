@@ -173,6 +173,10 @@ class WalletRuntime extends Plugin {
         String command = cmdParts[0];
 
         if (command.equals("/" + s.walletCommand)) {
+            if (cmdParts.length > 1 && cmdParts[1].toLowerCase().startsWith("grant")) {
+                handleAdminGrant(player, cmdParts[1]);
+                return;
+            }
             if (cmdParts.length > 1
                     && (cmdParts[1].equalsIgnoreCase("status") || cmdParts[1].equalsIgnoreCase("info"))) {
                 PluginInfoStatusProviders.show(player, name);
@@ -184,6 +188,45 @@ class WalletRuntime extends Plugin {
             }
             gui.openWallet(player);
         }
+    }
+
+    private void handleAdminGrant(Player admin, String arguments) {
+        String[] parts = arguments.trim().split("\\s+");
+        String language = de.omegazirkel.risingworld.OZTools.getPlayerLanguage(admin);
+        if (!admin.isAdmin()) {
+            admin.sendTextMessage(t.get("tc.wallet.grant.not.admin", language));
+            return;
+        }
+        if (parts.length < 3 || parts.length > 4) {
+            admin.sendTextMessage(t.get("tc.wallet.grant.usage", language)
+                    .replace("PH_PLUGIN_CMD", s.walletCommand));
+            return;
+        }
+        long amount;
+        try {
+            amount = Long.parseLong(parts[2]);
+        } catch (NumberFormatException ex) {
+            amount = 0L;
+        }
+        Player recipient = Server.getPlayerByUID(parts[1]);
+        if (recipient == null) {
+            admin.sendTextMessage(t.get("tc.wallet.grant.player.not.found", language));
+            return;
+        }
+        String currency = parts.length == 4 ? parts[3] : s.defaultCurrencyIdentifier;
+        WalletTransactionResult result = deposit(recipient.getDbID(), amount,
+                "Admin grant by " + admin.getUID(), currency, name);
+        if (!result.success) {
+            admin.sendTextMessage(t.get("tc.wallet.grant.failed", language));
+            return;
+        }
+        admin.sendTextMessage(t.get("tc.wallet.grant.success", language)
+                .replace("PH_AMOUNT", Long.toString(amount))
+                .replace("PH_CURRENCY", currency)
+                .replace("PH_PLAYER", recipient.getName()));
+        recipient.sendTextMessage(t.get("tc.wallet.grant.received", de.omegazirkel.risingworld.OZTools.getPlayerLanguage(recipient))
+                .replace("PH_AMOUNT", Long.toString(amount))
+                .replace("PH_CURRENCY", currency));
     }
 
     public void onPlayerSpawnEvent(PlayerSpawnEvent event) {
