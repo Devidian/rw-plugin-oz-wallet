@@ -2,6 +2,10 @@
 
 <https://www.conventionalcommits.org/en/v1.0.0/>
 
+## [0.9.1] - 2026-09-11 | Plugin-setting localization
+
+- fix: localize the world initial-capital setting in German and English.
+
 ## [0.9.0] - 2026-09-08 | Administrator grants
 
 - feat: allow administrators to grant a positive Wallet amount to an online player with a durable audit reason.
