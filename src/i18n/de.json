@@ -33,6 +33,7 @@
       }
     },
     "setting": {
+      "worldinitialcapital": { "label": "Welt-Startkapital", "desc": "Anfangsguthaben des Wallet-Weltkontos." },
       "adminoverview": {
         "desc": "Anzeigeverhalten der Admin-Wallet-Übersicht.",
         "label": "Admin-Übersicht"
