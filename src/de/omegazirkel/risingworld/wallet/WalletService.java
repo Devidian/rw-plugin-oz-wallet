@@ -99,6 +99,31 @@ public class WalletService {
         return changeBalance(playerDbId, -value, reason, currencyIdentifier, pluginIdentifier);
     }
 
+    /** Creates one audited compensating transaction; the original ledger row remains immutable. */
+    public WalletTransactionResult reverseTransaction(long transactionId) {
+        if (transactionId <= 0) return WalletTransactionResult.failure(WalletErrorCode.INVALID_ARGUMENT,
+                "Transaction id must be positive.");
+        try {
+            WalletTransaction original = listLatestGlobalTransactions(0).stream()
+                    .filter(transaction -> transaction.getId() == transactionId).findFirst().orElse(null);
+            if (original == null) return WalletTransactionResult.failure(WalletErrorCode.INVALID_ARGUMENT,
+                    "Transaction was not found.");
+            if (database.hasReversalForTransaction(transactionId)) return WalletTransactionResult.failure(
+                    WalletErrorCode.IDEMPOTENCY_CONFLICT, "Transaction was already reversed.");
+            long amount = Math.abs(original.getDelta());
+            if (amount == 0) return WalletTransactionResult.failure(WalletErrorCode.INVALID_ARGUMENT,
+                    "A zero-value transaction cannot be reversed.");
+            return original.getDelta() < 0
+                    ? deposit(original.getPlayerDbId(), amount, "Reversal of transaction #" + transactionId,
+                            original.getCurrency().getIdentifier(), "OZ - Wallet")
+                    : withdraw(original.getPlayerDbId(), amount, "Reversal of transaction #" + transactionId,
+                            original.getCurrency().getIdentifier(), "OZ - Wallet");
+        } catch (SQLException ex) {
+            Wallet.logger().error("reverseTransaction failed: " + ex.getMessage());
+            return WalletTransactionResult.failure(WalletErrorCode.DATABASE_ERROR, "Wallet reversal failed.");
+        }
+    }
+
     public WalletBalanceResult balance(int playerDbId, String currencyIdentifier) {
         if (playerDbId <= 0) {
             return WalletBalanceResult.failure(WalletErrorCode.INVALID_ARGUMENT, "Player database id must be positive.");

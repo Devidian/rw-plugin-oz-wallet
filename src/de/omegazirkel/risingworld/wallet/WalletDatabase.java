@@ -840,6 +840,17 @@ public class WalletDatabase {
         return transactions;
     }
 
+    /** A compensating entry is immutable; this guard prevents reversing one ledger row twice. */
+    public boolean hasReversalForTransaction(long transactionId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT 1 FROM wallet_transactions
+                WHERE source_plugin = 'OZ - Wallet' AND reason = ? LIMIT 1
+                """)) {
+            statement.setString(1, "Reversal of transaction #" + transactionId);
+            try (ResultSet result = statement.executeQuery()) { return result.next(); }
+        }
+    }
+
     public List<WalletTransaction> listLatestGlobalTransactions(int limit) throws SQLException {
         boolean limited = limit > 0;
         String sql = """

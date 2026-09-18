@@ -2,6 +2,10 @@
 
 <https://www.conventionalcommits.org/en/v1.0.0/>
 
+## [0.9.2] - 2026-09-18 | Transaction reversals
+
+- feat: let administrators create one confirmed, audited compensating transaction from the global transaction view while retaining the original ledger entry.
+
 ## [0.9.1] - 2026-09-11 | Plugin-setting localization
 
 - fix: localize the world initial-capital setting in German and English.

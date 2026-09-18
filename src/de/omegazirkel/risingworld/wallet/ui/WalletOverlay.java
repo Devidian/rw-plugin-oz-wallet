@@ -37,6 +37,7 @@ import de.omegazirkel.risingworld.tools.ui.table.TableScrollView;
 import net.risingworld.api.Server;
 import net.risingworld.api.objects.Player;
 import net.risingworld.api.ui.UILabel;
+import net.risingworld.api.ui.MessageBoxButtons;
 import net.risingworld.api.ui.UIScrollView;
 import net.risingworld.api.ui.UITextField;
 import net.risingworld.api.ui.UIScrollView.ScrollViewMode;
@@ -216,19 +217,21 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
                             t().get("tc.wallet.col.currency", uiPlayer),
                             t().get("tc.wallet.col.source", uiPlayer),
                             t().get("tc.wallet.col.reason", uiPlayer),
-                            t().get("tc.wallet.col.date", uiPlayer)),
-                    Arrays.asList(16f, 11f, 18f, 16f, 25f, 14f));
+                            t().get("tc.wallet.col.date", uiPlayer),
+                            t().get("tc.wallet.col.actions", uiPlayer)),
+                    Arrays.asList(15f, 10f, 16f, 14f, 23f, 14f, 8f));
             table.setPosition(0, 0, false);
             table.style.width.set(100, Unit.Percent);
             table.setScrollBodyHeight(TABLE_SCROLL_BODY_HEIGHT);
             for (WalletTransaction tx : transactions) {
                 table.addRow(new TableRow(new ArrayList<>(Arrays.asList(
-                        cell(playerName(tx.getPlayerDbId()), 16f),
-                        cell(formatDelta(tx.getDelta()), 11f),
-                        cell(tx.getCurrency().getName(), 18f),
-                        cell(tx.getPluginIdentifier(), 16f),
-                        cell(tx.getReason(), 25f),
-                        cell(dateFormat.format(new Date(tx.getCreatedAt())), 14f)))));
+                        cell(playerName(tx.getPlayerDbId()), 15f),
+                        cell(formatDelta(tx.getDelta()), 10f),
+                        cell(tx.getCurrency().getName(), 16f),
+                        cell(tx.getPluginIdentifier(), 14f),
+                        cell(tx.getReason(), 23f),
+                        cell(dateFormat.format(new Date(tx.getCreatedAt())), 14f),
+                        reversalAction(tx, 8f)))));
             }
             body.addChild(table.getRoot());
         } catch (SQLException ex) {
@@ -593,6 +596,22 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
         label.setTextWrap(false);
         label.setTextAlign(TextAnchor.MiddleLeft);
         return new TableCell(label, width);
+    }
+
+    private TableCell reversalAction(WalletTransaction transaction, float width) {
+        AdvancedButton button = actionButton("↶", () -> uiPlayer.showMessageBox(MessageBoxButtons.Yes_No,
+                t().get("tc.wallet.reverse.title", uiPlayer),
+                t().get("tc.wallet.reverse.confirm", uiPlayer).replace("PH_TRANSACTION", Long.toString(transaction.getId())),
+                0, answer -> {
+                    if (answer != 0) return;
+                    var result = service.reverseTransaction(transaction.getId());
+                    if (result.success) uiPlayer.showSuccessMessageBox(t().get("tc.wallet.reverse.title", uiPlayer),
+                            t().get("tc.wallet.reverse.success", uiPlayer));
+                    else uiPlayer.showErrorMessageBox(t().get("tc.wallet.reverse.title", uiPlayer), result.message);
+                    rebuild();
+                }));
+        button.setSize(28, 24, false);
+        return new TableCell(button, width);
     }
 
     private UILabel message(String text) {

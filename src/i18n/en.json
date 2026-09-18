@@ -104,6 +104,7 @@
       },
       "back": "Back",
       "close": "Close",
+      "reverse": {"title": "Reverse transaction", "confirm": "Create a compensating transaction for #PH_TRANSACTION? The original entry remains unchanged.", "success": "Compensating transaction created."},
       "col": {
         "account": {
           "$value": "Account",

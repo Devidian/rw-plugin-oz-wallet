@@ -104,6 +104,7 @@
       },
       "back": "Zurück",
       "close": "Schließen",
+      "reverse": {"title": "Transaktion rückgängig machen", "confirm": "Gegentransaktion für #PH_TRANSACTION erstellen? Der ursprüngliche Eintrag bleibt unverändert.", "success": "Gegentransaktion wurde erstellt."},
       "col": {
         "account": {
           "$value": "Konto",
