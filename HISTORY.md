@@ -2,6 +2,10 @@
 
 <https://www.conventionalcommits.org/en/v1.0.0/>
 
+## [0.9.3] - 2026-09-18 | Release pipeline compatibility
+
+- fix: install PluginAPI 0.9.3.2 in release validation and publishing workflows.
+
 ## [0.9.2] - 2026-09-18 | Transaction reversals
 
 - feat: let administrators create one confirmed, audited compensating transaction from the global transaction view while retaining the original ledger entry.
