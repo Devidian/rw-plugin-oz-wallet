@@ -2,6 +2,10 @@
 
 <https://www.conventionalcommits.org/en/v1.0.0/>
 
+## [0.10.0] - 2026-09-23 | JSON-only settings runtime
+
+- change: use world-scoped JSON settings only; transfer legacy Properties values manually.
+
 ## [0.9.3] - 2026-09-18 | Release pipeline compatibility
 
 - fix: install PluginAPI 0.9.3.2 in release validation and publishing workflows.
