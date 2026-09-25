@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## [0.11.0] - 2026-09-25 | Faction accounts and world treasury
+
 - feat: separate 100,000 world start capital from configurable 25,000 annual capital.
 - feat: show optional faction balances/logs and admin faction accounts; allow confirmed system-account reversals.
 - fix: add account-detail reversal actions, widen system account IDs, and correct page number substitution.
