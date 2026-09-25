@@ -12,5 +12,6 @@
     "amount": "100",
     "enabled": "true"
   },
-  "worldInitialCapital": "10000"
+  "worldInitialCapital": "100000",
+  "worldAnnualCapital": "25000"
 }

@@ -99,7 +99,7 @@ class WalletRuntime extends Plugin {
             }
             WalletTransactionResult annualCapital = new WorldTreasuryService(walletService, name).reconcile(
                     worldSystemAccountId, Server.getGameTime(net.risingworld.api.objects.Time.Unit.Years),
-                    Server.getGameTimeSpeed(), daysPerMonth(), s.defaultCurrencyIdentifier);
+                    Server.getGameTimeSpeed(), daysPerMonth(), s.defaultCurrencyIdentifier, s.worldAnnualCapital);
             if (!annualCapital.success) logger().error("Failed to issue annual world treasury capital: "
                     + annualCapital.message);
         } catch (SQLException ex) {

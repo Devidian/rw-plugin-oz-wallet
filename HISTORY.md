@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+- feat: separate 100,000 world start capital from configurable 25,000 annual capital.
+- feat: show optional faction balances/logs and admin faction accounts; allow confirmed system-account reversals.
+- fix: add account-detail reversal actions, widen system account IDs, and correct page number substitution.
+
 ## [0.10.1] - 2026-09-25 | Localized audit language
 
 - fix: translate the system-account audit-language setting and its options in DE/EN.

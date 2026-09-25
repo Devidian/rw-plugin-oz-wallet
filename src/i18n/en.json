@@ -35,6 +35,7 @@
     "setting": {
       "wallet_audit_language": {"label": "System account audit language", "desc": "Language used for system-account transaction reasons.", "option": {"de": "German", "en": "English"}},
       "worldinitialcapital": { "label": "World initial capital", "desc": "Initial balance of the Wallet world account." },
+      "worldannualcapital": { "label": "Annual world capital", "desc": "Annual grant to the world account." },
       "adminoverview": {
         "desc": "Admin wallet overview display behavior.",
         "label": "Admin overview"
@@ -181,6 +182,7 @@
           "transactions": "Audit log"
         },
         "balances": "Balances",
+        "faction": {"balances": "Faction balances", "transactions": "Faction log", "accounts": "Faction accounts"},
         "global": {
           "balances": "Global balances"
         },

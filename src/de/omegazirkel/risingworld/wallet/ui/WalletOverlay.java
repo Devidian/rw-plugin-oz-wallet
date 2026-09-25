@@ -26,6 +26,7 @@ import de.omegazirkel.risingworld.wallet.SystemAccountsResult;
 import de.omegazirkel.risingworld.tools.I18n;
 import de.omegazirkel.risingworld.tools.PlayerDatabaseHelper;
 import de.omegazirkel.risingworld.tools.PlayerDatabaseHelper.PlayerRecord;
+import de.omegazirkel.risingworld.tools.bridge.FactionBridge;
 import de.omegazirkel.risingworld.tools.ui.AssetManager;
 import de.omegazirkel.risingworld.tools.ui.AdvancedButton;
 import de.omegazirkel.risingworld.tools.ui.AdvancedButtonFactory;
@@ -55,6 +56,7 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
 
     private final Wallet plugin;
     private final WalletService service;
+    private final FactionBridge factions;
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
     private String activeWalletTab = "balances";
     private String systemAccountSearch = "";
@@ -67,6 +69,7 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
         super(player, p -> p.deleteAttribute("wallet.ui.overlay"));
         this.plugin = plugin;
         this.service = service;
+        this.factions = new FactionBridge(plugin);
         dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
         rebuild();
     }
@@ -96,12 +99,20 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
         setupTabContainer();
         addTab(t().get("tc.wallet.tab.balances", uiPlayer), 150, "balances".equals(activeWalletTab), () -> selectTab("balances"));
         addTab(t().get("tc.wallet.tab.transactions", uiPlayer), 185, "transactions".equals(activeWalletTab), () -> selectTab("transactions"));
+        if (factionAccountId() != null) {
+            addTab(t().get("tc.wallet.tab.faction.balances", uiPlayer), 190,
+                    "factionBalances".equals(activeWalletTab), () -> selectTab("factionBalances"));
+            if (canViewFactionLog()) addTab(t().get("tc.wallet.tab.faction.transactions", uiPlayer), 165,
+                    "factionTransactions".equals(activeWalletTab), () -> selectTab("factionTransactions"));
+        }
         if (uiPlayer.isAdmin()) {
             addTab(t().get("tc.wallet.tab.admin.transactions", uiPlayer), 160, "adminTransactions".equals(activeWalletTab), true, () -> selectTab("adminTransactions"));
             addTab(t().get("tc.wallet.tab.global.balances", uiPlayer), 190, "globalBalances".equals(activeWalletTab), true, () -> selectTab("globalBalances"));
             addTab(t().get("tc.wallet.tab.top.balances", uiPlayer), 160, "topBalances".equals(activeWalletTab), true, () -> selectTab("topBalances"));
             addTab(t().get("tc.wallet.tab.system.accounts", uiPlayer), 150,
                     "systemAccounts".equals(activeWalletTab), true, () -> selectTab("systemAccounts"));
+            if (factions.isAvailable()) addTab(t().get("tc.wallet.tab.faction.accounts", uiPlayer), 175,
+                    "factionAccounts".equals(activeWalletTab), true, () -> selectTab("factionAccounts"));
         }
         showActiveTab();
     }
@@ -113,6 +124,9 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
 
     private void showActiveTab() {
         if ("transactions".equals(activeWalletTab)) showTransactions();
+        else if ("factionBalances".equals(activeWalletTab)) showFactionBalances();
+        else if ("factionTransactions".equals(activeWalletTab)) showFactionTransactions();
+        else if ("factionAccounts".equals(activeWalletTab)) showFactionAccounts();
         else if ("adminTransactions".equals(activeWalletTab)) showAdminTransactions();
         else if ("globalBalances".equals(activeWalletTab)) showGlobalBalances();
         else if ("topBalances".equals(activeWalletTab)) showTopBalances();
@@ -123,6 +137,69 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
     @Override
     protected void close() {
         PluginGUI.getInstance().closeWallet(uiPlayer);
+    }
+
+    private String factionAccountId() {
+        return factions.isAvailable() ? factions.factionAccountIdForPlayer(uiPlayer.getDbID()) : null;
+    }
+
+    private boolean canViewFactionLog() {
+        String role = factions.factionRoleForPlayer(uiPlayer.getDbID());
+        return factionAccountId() != null && ("OFFICER".equals(role) || "LEADER".equals(role));
+    }
+
+    private void showFactionBalances() {
+        body.removeAllChilds();
+        String accountId = factionAccountId();
+        if (accountId == null) { selectTab("balances"); return; }
+        SystemAccountBalancesResult result = service.systemAccountBalances(accountId);
+        if (!result.success) { body.addChild(message(t().get("tc.wallet.err.load.balances", uiPlayer))); return; }
+        UIScrollView scroll = new UIScrollView(ScrollViewMode.Vertical);
+        scroll.setPosition(0, 0, false);
+        scroll.setSize(100, 100, true);
+        OZUIElement content = new OZUIElement();
+        content.style.width.set(100, Unit.Percent);
+        content.style.height.set(Math.max(407, ((result.balances.size() + 2) / 3) * 144), Unit.Pixel);
+        content.style.display.set(DisplayStyle.Flex);
+        content.style.flexDirection.set(FlexDirection.Row);
+        content.style.flexWrap.set(Wrap.Wrap);
+        for (SystemAccountBalance balance : result.balances) content.addChild(balanceCard(
+                new WalletBalance(uiPlayer.getDbID(), balance.getCurrency(), balance.getBalance(), 0L)));
+        scroll.addChild(content);
+        body.addChild(scroll);
+    }
+
+    private void showFactionTransactions() {
+        body.removeAllChilds();
+        if (!canViewFactionLog()) { selectTab("balances"); return; }
+        showSystemAccountTransactions(factionAccountId(), false);
+    }
+
+    private void showFactionAccounts() {
+        if (!uiPlayer.isAdmin() || !factions.isAvailable()) { selectTab("balances"); return; }
+        body.removeAllChilds();
+        if (systemAccountDetailId != null) { showSystemAccountTransactions(systemAccountDetailId); return; }
+        SystemAccountsResult accounts = service.listSystemAccounts("", 0, 100);
+        if (!accounts.success) { body.addChild(message(t().get("tc.wallet.err.load.system.accounts", uiPlayer))); return; }
+        TableScrollView table = new TableScrollView(Arrays.asList(
+                t().get("tc.wallet.col.account.id", uiPlayer), t().get("tc.wallet.col.account", uiPlayer),
+                t().get("tc.wallet.col.amount", uiPlayer), t().get("tc.wallet.col.actions", uiPlayer)),
+                Arrays.asList(38f, 22f, 26f, 14f));
+        table.setPosition(0, 0, false);
+        table.style.width.set(100, Unit.Percent);
+        table.setScrollBodyHeight(TABLE_SCROLL_BODY_HEIGHT);
+        for (int offset = 0; offset < accounts.total; offset += 100) {
+            SystemAccountsResult page = offset == 0 ? accounts : service.listSystemAccounts("", offset, 100);
+            if (!page.success) break;
+            for (SystemAccount account : page.accounts) {
+                if (!"FACTION".equalsIgnoreCase(account.getAccountType())) continue;
+                table.addRow(new TableRow(new ArrayList<>(Arrays.asList(
+                        cell(account.getAccountId(), 38f), cell(account.getDisplayName(), 22f),
+                        cell(systemBalanceSummary(account.getAccountId()), 26f),
+                        new TableCell(detailButton(account.getAccountId()), 14f)))));
+            }
+        }
+        body.addChild(table.getRoot());
     }
 
     private void showBalances() {
@@ -354,14 +431,16 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
         TableScrollView table = new TableScrollView(Arrays.asList(
                 t().get("tc.wallet.col.amount", uiPlayer), t().get("tc.wallet.col.currency", uiPlayer),
                 t().get("tc.wallet.col.source", uiPlayer), t().get("tc.wallet.col.reason", uiPlayer),
-                t().get("tc.wallet.col.date", uiPlayer)), Arrays.asList(12f, 18f, 18f, 34f, 18f));
+                t().get("tc.wallet.col.date", uiPlayer), t().get("tc.wallet.col.actions", uiPlayer)),
+                Arrays.asList(11f, 16f, 17f, 30f, 18f, 8f));
         table.setPosition(12, 56, false);
         table.style.width.set(98, Unit.Percent);
         table.setScrollBodyHeight(330f);
         for (WalletTransaction tx : transactions) {
-            table.addRow(new TableRow(new ArrayList<>(Arrays.asList(cell(formatDelta(tx.getDelta()), 12f),
-                    cell(tx.getCurrency().getIdentifier(), 18f), cell(tx.getPluginIdentifier(), 18f),
-                    cell(tx.getReason(), 34f), cell(dateFormat.format(new Date(tx.getCreatedAt())), 18f)))));
+            table.addRow(new TableRow(new ArrayList<>(Arrays.asList(cell(formatDelta(tx.getDelta()), 11f),
+                    cell(tx.getCurrency().getIdentifier(), 16f), cell(tx.getPluginIdentifier(), 17f),
+                    cell(tx.getReason(), 30f), cell(dateFormat.format(new Date(tx.getCreatedAt())), 18f),
+                    reversalAction(tx, 8f)))));
         }
         body.addChild(table.getRoot());
     }
@@ -412,15 +491,15 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
                         t().get("tc.wallet.col.type", uiPlayer), t().get("tc.wallet.col.source", uiPlayer),
                         t().get("tc.wallet.col.status", uiPlayer), t().get("tc.wallet.col.amount", uiPlayer),
                         t().get("tc.wallet.col.actions", uiPlayer)),
-                Arrays.asList(18f, 20f, 10f, 14f, 10f, 14f, 14f));
+                Arrays.asList(29f, 15f, 10f, 14f, 10f, 8f, 14f));
         table.setPosition(12, 56, false);
         table.style.width.set(98, Unit.Percent);
         table.setScrollBodyHeight(300f);
         for (SystemAccount account : accounts.accounts) {
             table.addRow(new TableRow(new ArrayList<>(Arrays.asList(
-                    cell(account.getAccountId(), 18f), cell(account.getDisplayName(), 20f),
+                    cell(account.getAccountId(), 29f), cell(account.getDisplayName(), 15f),
                     cell(account.getAccountType(), 10f), cell(account.getOwnerPlugin(), 14f),
-                    cell(account.getStatus(), 10f), cell(systemBalanceSummary(account.getAccountId()), 14f),
+                    cell(account.getStatus(), 10f), cell(systemBalanceSummary(account.getAccountId()), 8f),
                     new TableCell(detailButton(account.getAccountId()), 14f)))));
         }
         body.addChild(table.getRoot());
@@ -429,7 +508,7 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
         int pages = Math.max(1, (accounts.total + SYSTEM_ACCOUNT_PAGE_SIZE - 1) / SYSTEM_ACCOUNT_PAGE_SIZE);
         if (pages <= 1) return;
         UILabel pageLabel = new UILabel(t().get("tc.wallet.page", uiPlayer)
-                .replace("PH_PAGE", Integer.toString(page)).replace("PH_PAGES", Integer.toString(pages)));
+                .replace("PH_PAGES", Integer.toString(pages)).replace("PH_PAGE", Integer.toString(page)));
         pageLabel.setPivot(Pivot.UpperCenter);
         pageLabel.setPosition(50, 0, true);
         pageLabel.style.top.set(398, Unit.Pixel);
@@ -457,6 +536,12 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
     }
 
     private void showSystemAccountTransactions(String accountId) {
+        showSystemAccountTransactions(accountId, true);
+    }
+
+    private void showSystemAccountTransactions(String accountId, boolean adminActions) {
+        if (adminActions && !uiPlayer.isAdmin()) return;
+        if (!adminActions && !canViewFactionLog()) return;
         AdvancedButton back = actionButton(t().get("tc.wallet.back", uiPlayer), () -> {
             systemAccountDetailId = null;
             rebuild();
@@ -474,15 +559,18 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
         TableScrollView table = new TableScrollView(
                 Arrays.asList(t().get("tc.wallet.col.amount", uiPlayer),
                         t().get("tc.wallet.col.currency", uiPlayer), t().get("tc.wallet.col.source", uiPlayer),
-                        t().get("tc.wallet.col.reason", uiPlayer), t().get("tc.wallet.col.date", uiPlayer)),
-                Arrays.asList(12f, 18f, 18f, 34f, 18f));
+                        t().get("tc.wallet.col.reason", uiPlayer), t().get("tc.wallet.col.date", uiPlayer),
+                        t().get("tc.wallet.col.actions", uiPlayer)),
+                Arrays.asList(11f, 16f, 17f, 30f, 18f, 8f));
         table.setPosition(12, 56, false);
         table.style.width.set(98, Unit.Percent);
         table.setScrollBodyHeight(330f);
         for (SystemAccountTransaction tx : result.transactions) {
-            table.addRow(new TableRow(new ArrayList<>(Arrays.asList(cell(formatDelta(tx.getDelta()), 12f),
-                    cell(tx.getCurrency().getIdentifier(), 18f), cell(tx.getPluginIdentifier(), 18f),
-                    cell(tx.getReason(), 34f), cell(dateFormat.format(new Date(tx.getCreatedAt())), 18f)))));
+            List<TableCell> cells = new ArrayList<>(Arrays.asList(cell(formatDelta(tx.getDelta()), 11f),
+                    cell(tx.getCurrency().getIdentifier(), 16f), cell(tx.getPluginIdentifier(), 17f),
+                    cell(tx.getReason(), 30f), cell(dateFormat.format(new Date(tx.getCreatedAt())), 18f)));
+            cells.add(adminActions ? reversalAction(tx, 8f) : cell("", 8f));
+            table.addRow(new TableRow(cells));
         }
         body.addChild(table.getRoot());
     }
@@ -605,6 +693,22 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
                 0, answer -> {
                     if (answer != 0) return;
                     var result = service.reverseTransaction(transaction.getId());
+                    if (result.success) uiPlayer.showSuccessMessageBox(t().get("tc.wallet.reverse.title", uiPlayer),
+                            t().get("tc.wallet.reverse.success", uiPlayer));
+                    else uiPlayer.showErrorMessageBox(t().get("tc.wallet.reverse.title", uiPlayer), result.message);
+                    rebuild();
+                }));
+        button.setSize(28, 24, false);
+        return new TableCell(button, width);
+    }
+
+    private TableCell reversalAction(SystemAccountTransaction transaction, float width) {
+        AdvancedButton button = actionButton("↶", () -> uiPlayer.showMessageBox(MessageBoxButtons.Yes_No,
+                t().get("tc.wallet.reverse.title", uiPlayer),
+                t().get("tc.wallet.reverse.confirm", uiPlayer).replace("PH_TRANSACTION", Long.toString(transaction.getId())),
+                0, answer -> {
+                    if (answer != 0 || !uiPlayer.isAdmin()) return;
+                    var result = service.reverseSystemTransaction(transaction.getId());
                     if (result.success) uiPlayer.showSuccessMessageBox(t().get("tc.wallet.reverse.title", uiPlayer),
                             t().get("tc.wallet.reverse.success", uiPlayer));
                     else uiPlayer.showErrorMessageBox(t().get("tc.wallet.reverse.title", uiPlayer), result.message);

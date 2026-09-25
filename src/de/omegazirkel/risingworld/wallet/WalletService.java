@@ -124,6 +124,21 @@ public class WalletService {
         }
     }
 
+    public WalletTransactionResult reverseSystemTransaction(long transactionId) {
+        if (transactionId <= 0) return WalletTransactionResult.failure(WalletErrorCode.INVALID_ARGUMENT,
+                "Transaction id must be positive.");
+        try {
+            return database.reverseSystemTransaction(transactionId)
+                    ? WalletTransactionResult.success(null)
+                    : WalletTransactionResult.failure(WalletErrorCode.INVALID_ARGUMENT,
+                            "Transaction was not found, was already reversed, or has insufficient funds.");
+        } catch (SQLException | ArithmeticException ex) {
+            Wallet.logger().error("reverseSystemTransaction failed: " + ex.getMessage());
+            return WalletTransactionResult.failure(WalletErrorCode.DATABASE_ERROR,
+                    "System transaction reversal failed.");
+        }
+    }
+
     public WalletBalanceResult balance(int playerDbId, String currencyIdentifier) {
         if (playerDbId <= 0) {
             return WalletBalanceResult.failure(WalletErrorCode.INVALID_ARGUMENT, "Player database id must be positive.");

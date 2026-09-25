@@ -790,6 +790,54 @@ public class WalletDatabase {
         return transactions;
     }
 
+    /** Writes one compensating system ledger row while preserving the original. */
+    public synchronized boolean reverseSystemTransaction(long transactionId) throws SQLException {
+        boolean previousAutoCommit = connection.getAutoCommit();
+        connection.setAutoCommit(false);
+        try {
+            String accountId;
+            String currencyId;
+            long delta;
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    SELECT tx.account_id, tx.currency_identifier, tx.delta
+                    FROM wallet_system_transactions tx
+                    JOIN wallet_system_accounts account ON account.account_id = tx.account_id
+                    WHERE tx.id = ? AND account.status = 'ACTIVE'
+                    """)) {
+                statement.setLong(1, transactionId);
+                try (ResultSet result = statement.executeQuery()) {
+                    if (!result.next()) return false;
+                    accountId = result.getString(1);
+                    currencyId = result.getString(2);
+                    delta = result.getLong(3);
+                }
+            }
+            if (delta == 0 || delta == Long.MIN_VALUE) return false;
+            String reason = "Reversal of system transaction #" + transactionId;
+            try (PreparedStatement guard = connection.prepareStatement("""
+                    SELECT 1 FROM wallet_system_transactions WHERE source_plugin = 'OZ - Wallet'
+                    AND reason = ? LIMIT 1
+                    """)) {
+                guard.setString(1, reason);
+                try (ResultSet existing = guard.executeQuery()) { if (existing.next()) return false; }
+            }
+            long current = accountBalance("SYSTEM", accountId, currencyId);
+            long resulting = Math.addExact(current, -delta);
+            if (resulting < 0) return false;
+            long now = now();
+            upsertAccountBalance("SYSTEM", accountId, currencyId, resulting, now);
+            insertAccountTransaction("SYSTEM", accountId, currencyId, -delta, resulting,
+                    "OZ - Wallet", reason, now);
+            connection.commit();
+            return true;
+        } catch (SQLException | RuntimeException ex) {
+            rollbackQuietly();
+            throw ex;
+        } finally {
+            connection.setAutoCommit(previousAutoCommit);
+        }
+    }
+
     public boolean hasNonZeroSystemBalance(String accountId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement("""
                 SELECT 1 FROM wallet_system_balances WHERE account_id = ? AND balance <> 0 LIMIT 1

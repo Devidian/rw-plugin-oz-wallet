@@ -194,6 +194,22 @@ public class SystemAccountTest {
         }
     }
 
+    @Test
+    public void adminSystemReversalIsAuditedOnceAndRequiresFunds() throws Exception {
+        try (Connection connection = DriverManager.getConnection("jdbc:sqlite::memory:")) {
+            WalletService service = service(connection);
+            assertTrue(service.createSystemAccount("world::test", "WORLD", "World", "OZ - Wallet").success);
+            assertTrue(service.creditSystemAccountIdempotent("world::test", 100, "Seed", "OZC",
+                    "OZ - Wallet", "seed").success);
+            long seedId = service.systemAccountTransactions("world::test", 10).transactions.get(0).getId();
+            assertTrue(service.reverseSystemTransaction(seedId).success);
+            assertFalse(service.reverseSystemTransaction(seedId).success);
+            assertEquals(0, service.systemAccountBalances("world::test").balances.get(0).getBalance());
+            assertEquals(2, service.systemAccountTransactions("world::test", 10).transactions.size());
+            assertFalse(service.reverseSystemTransaction(-1).success);
+        }
+    }
+
     private WalletService service(Connection connection) throws Exception {
         WalletService service = new WalletService(new WalletDatabase(connection));
         assertTrue(service.registerCurrency("OZC", "OZC", "coin", "OZ - Wallet", true).success);
