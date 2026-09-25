@@ -33,6 +33,7 @@
       }
     },
     "setting": {
+      "wallet_audit_language": {"label": "System account audit language", "desc": "Language used for system-account transaction reasons.", "option": {"de": "German", "en": "English"}},
       "worldinitialcapital": { "label": "World initial capital", "desc": "Initial balance of the Wallet world account." },
       "adminoverview": {
         "desc": "Admin wallet overview display behavior.",

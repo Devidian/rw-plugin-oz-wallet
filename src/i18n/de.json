@@ -33,6 +33,7 @@
       }
     },
     "setting": {
+      "wallet_audit_language": {"label": "Audit-Sprache für Systemkonten", "desc": "Sprache der Buchungsgründe für Systemkonten.", "option": {"de": "Deutsch", "en": "Englisch"}},
       "worldinitialcapital": { "label": "Welt-Startkapital", "desc": "Anfangsguthaben des Wallet-Weltkontos." },
       "adminoverview": {
         "desc": "Anzeigeverhalten der Admin-Wallet-Übersicht.",

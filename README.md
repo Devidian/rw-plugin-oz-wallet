@@ -2,6 +2,8 @@
 
 Wallet and economy state plugin for Rising World.
 
+The admin audit-language setting offers localized German and English choices.
+
 ## Responsibilities
 
 - currency registry
