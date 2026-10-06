@@ -26,7 +26,7 @@ Does not own:
 
 ## Mandatory Workflow Rules
 
-- Preserve the Java 20 baseline.
+- Preserve the Java 25 baseline.
 - Keep wallet economy state local to this plugin.
 - Use `rw-plugin-oz-tools` helpers for shared runtime concerns.
 - Do not put the wallet overview into `PlayerPluginSettingsOverlay`.

@@ -1,5 +1,7 @@
 # OZ - Wallet
 
+**Build baseline:** JDK 25 (`--release 25`) and the bundled Rising World PluginAPI 0.9.3.2 JAR.
+
 Wallet and economy state plugin for Rising World.
 
 The admin audit-language setting offers localized German and English choices.
