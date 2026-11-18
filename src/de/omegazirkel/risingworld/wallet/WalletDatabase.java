@@ -376,6 +376,72 @@ public class WalletDatabase {
         return 0L;
     }
 
+    /** Moves every positive balance to the world treasury and removes the player's wallet history atomically. */
+    public synchronized void erasePlayer(int playerDbId, String worldAccountId) throws SQLException {
+        if (playerDbId <= 0 || worldAccountId == null || worldAccountId.isBlank()) {
+            throw new IllegalArgumentException("A player DBID and world account are required");
+        }
+        SystemAccount world = findSystemAccount(worldAccountId)
+                .orElseThrow(() -> new SQLException("World treasury does not exist"));
+        if (!"WORLD".equals(world.getAccountType()) || !"ACTIVE".equals(world.getStatus())) {
+            throw new SQLException("World treasury is not active");
+        }
+
+        boolean previousAutoCommit = connection.getAutoCommit();
+        connection.setAutoCommit(false);
+        try {
+            try (PreparedStatement balances = connection.prepareStatement("""
+                    SELECT currency_identifier, balance FROM wallet_balances WHERE player_db_id = ?
+                    """)) {
+                balances.setInt(1, playerDbId);
+                try (ResultSet rows = balances.executeQuery()) {
+                    while (rows.next()) {
+                        long amount = rows.getLong("balance");
+                        if (amount < 0) throw new SQLException("Negative player balance cannot be erased");
+                        if (amount == 0) continue;
+                        String currency = rows.getString("currency_identifier");
+                        long next = Math.addExact(getSystemBalance(worldAccountId, currency), amount);
+                        long timestamp = now();
+                        upsertAccountBalance("SYSTEM", worldAccountId, currency, next, timestamp);
+                        // The treasury audit contains no player identifier.
+                        insertAccountTransaction("SYSTEM", worldAccountId, currency, amount, next,
+                                "OZ Wallet", "Erased player balance", timestamp);
+                    }
+                }
+            }
+            // Retain the counterparties’ ledger entries and their free-text reasons.
+            try (PreparedStatement transfers = connection.prepareStatement(
+                    "DELETE FROM wallet_transfers WHERE payer_db_id = ? OR payee_db_id = ?")) {
+                transfers.setInt(1, playerDbId);
+                transfers.setInt(2, playerDbId);
+                transfers.executeUpdate();
+            }
+            try (PreparedStatement accountTransfers = connection.prepareStatement("""
+                    DELETE FROM wallet_account_transfers
+                    WHERE (payer_kind = 'PLAYER' AND payer_reference = ?)
+                       OR (payee_kind = 'PLAYER' AND payee_reference = ?)
+                    """)) {
+                String reference = Integer.toString(playerDbId);
+                accountTransfers.setString(1, reference);
+                accountTransfers.setString(2, reference);
+                accountTransfers.executeUpdate();
+            }
+            for (String table : List.of("wallet_transactions", "wallet_balances")) {
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "DELETE FROM " + table + " WHERE player_db_id = ?")) {
+                    statement.setInt(1, playerDbId);
+                    statement.executeUpdate();
+                }
+            }
+            connection.commit();
+        } catch (SQLException | RuntimeException ex) {
+            rollbackQuietly();
+            throw ex;
+        } finally {
+            connection.setAutoCommit(previousAutoCommit);
+        }
+    }
+
     public Optional<Long> getBalanceUpdatedAt(int playerDbId, String currencyIdentifier) throws SQLException {
         String sql = """
                 SELECT updated_at
@@ -482,6 +548,7 @@ public class WalletDatabase {
             long delta,
             String pluginIdentifier,
             String reason) throws SQLException, InsufficientFundsException {
+        requirePlayerAvailable(playerDbId);
         boolean previousAutoCommit = connection.getAutoCommit();
         connection.setAutoCommit(false);
         try {
@@ -536,6 +603,8 @@ public class WalletDatabase {
                     && transfer.getReason().equals(reason)) return transfer;
             throw new IdempotencyConflictException();
         }
+        requirePlayerAvailable(payerDbId);
+        requirePlayerAvailable(payeeDbId);
         boolean previousAutoCommit = connection.getAutoCommit();
         connection.setAutoCommit(false);
         try {
@@ -618,6 +687,8 @@ public class WalletDatabase {
                     && transfer.getReason().equals(reason)) return transfer;
             throw new IdempotencyConflictException();
         }
+        if ("PLAYER".equals(payerKind)) requirePlayerAvailable(Integer.parseInt(payerReference));
+        if ("PLAYER".equals(payeeKind)) requirePlayerAvailable(Integer.parseInt(payeeReference));
 
         boolean previousAutoCommit = connection.getAutoCommit();
         connection.setAutoCommit(false);
@@ -664,6 +735,12 @@ public class WalletDatabase {
             throw ex;
         } finally {
             connection.setAutoCommit(previousAutoCommit);
+        }
+    }
+
+    private static void requirePlayerAvailable(int playerDbId) throws SQLException {
+        if (de.omegazirkel.risingworld.tools.privacy.PlayerErasureService.isPending(playerDbId)) {
+            throw new SQLException("Wallet operation unavailable during player erasure");
         }
     }
 

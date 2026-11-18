@@ -39,6 +39,7 @@ import de.omegazirkel.risingworld.wallet.SystemAccountTransactionsResult;
 import de.omegazirkel.risingworld.wallet.ui.WalletCurrencyHud;
 import de.omegazirkel.risingworld.wallet.ui.WalletPlayerPluginData;
 import de.omegazirkel.risingworld.wallet.ui.WalletPlayerPluginSettings;
+import de.omegazirkel.risingworld.tools.privacy.PlayerErasureService;
 import net.risingworld.api.Server;
 import net.risingworld.api.Plugin;
 import net.risingworld.api.events.player.PlayerCommandEvent;
@@ -48,6 +49,7 @@ import net.risingworld.api.objects.Player;
 import net.risingworld.api.ui.UITarget;
 
 class WalletRuntime extends Plugin {
+    private PlayerErasureService.Registration erasureRegistration;
     static final Colors c = Colors.getInstance();
     private static final String WELCOME_BONUS_CLAIMED_KEY = "oz.wallet.welcomeBonusClaimed";
     private static final String WELCOME_BONUS_REASON = "Welcome bonus";
@@ -66,6 +68,7 @@ class WalletRuntime extends Plugin {
 
     @Override
     public void onEnable() {
+        erasureRegistration = PlayerErasureService.register("wallet", request -> erasePlayerData(request.playerDbId()));
         name = this.getDescription("name");
         s = PluginSettings.getInstance((Wallet) this);
         t = I18n.getInstance(this);
@@ -136,6 +139,7 @@ class WalletRuntime extends Plugin {
 
     @Override
     public void onDisable() {
+        if (erasureRegistration != null) erasureRegistration.close();
         if (name != null) {
             PluginShortcutVisibility.unregister(name);
             PluginInfoStatusProviders.unregisterProvider(name);
@@ -427,6 +431,19 @@ class WalletRuntime extends Plugin {
 
     public String worldSystemAccountId() {
         return worldSystemAccountId;
+    }
+
+    /** Called by the privacy coordinator after the player has stopped using the Wallet. */
+    public boolean erasePlayerData(int playerDbId) {
+        if (walletService == null || worldSystemAccountId == null || playerSettings == null) return false;
+        try {
+            walletService.erasePlayerData(playerDbId, worldSystemAccountId);
+            playerSettings.erasePlayer(playerDbId);
+            return true;
+        } catch (SQLException | RuntimeException ex) {
+            logger().error("Failed to erase wallet data for DBID " + playerDbId + ": " + ex.getMessage());
+            return false;
+        }
     }
 
     public SystemAccountResult createSystemAccount(String accountId, String accountType, String displayName,

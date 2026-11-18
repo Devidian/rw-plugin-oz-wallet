@@ -24,6 +24,10 @@ public class WalletService {
         this.database = database;
     }
 
+    public void erasePlayerData(int playerDbId, String worldAccountId) throws SQLException {
+        database.erasePlayer(playerDbId, worldAccountId);
+    }
+
     public WalletCurrencyResult registerCurrency(
             String currencyIdentifier,
             String name,
