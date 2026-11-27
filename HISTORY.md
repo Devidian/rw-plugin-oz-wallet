@@ -4,8 +4,10 @@
 
 ## Unreleased
 
-- Player ledger reversal looks up the original row by transaction ID and retains the existing audit reason.
-- Localize the wallet dialog for an already reversed player transaction.
+## [0.11.3] - 2026-11-27 | Transaction reversal lookup
+
+- The administrator reversal dialog retrieves the selected ledger row by transaction ID and preserves its audit trail. Repeated reversal attempts leave balances and history intact.
+- The dialog explains an already reversed transaction in German or English.
 
 ## [0.11.0] - 2026-09-25 | Faction accounts and world treasury
 
