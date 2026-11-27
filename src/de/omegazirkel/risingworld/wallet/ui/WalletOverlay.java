@@ -15,6 +15,7 @@ import de.omegazirkel.risingworld.Wallet;
 import de.omegazirkel.risingworld.wallet.PluginGUI;
 import de.omegazirkel.risingworld.wallet.WalletBalance;
 import de.omegazirkel.risingworld.wallet.WalletCurrency;
+import de.omegazirkel.risingworld.wallet.WalletErrorCode;
 import de.omegazirkel.risingworld.wallet.WalletService;
 import de.omegazirkel.risingworld.wallet.WalletTransaction;
 import de.omegazirkel.risingworld.wallet.SystemAccount;
@@ -695,7 +696,9 @@ public class WalletOverlay extends BasePluginOverlayWithTabs {
                     var result = service.reverseTransaction(transaction.getId());
                     if (result.success) uiPlayer.showSuccessMessageBox(t().get("tc.wallet.reverse.title", uiPlayer),
                             t().get("tc.wallet.reverse.success", uiPlayer));
-                    else uiPlayer.showErrorMessageBox(t().get("tc.wallet.reverse.title", uiPlayer), result.message);
+                    else uiPlayer.showErrorMessageBox(t().get("tc.wallet.reverse.title", uiPlayer),
+                            result.errorCode == WalletErrorCode.IDEMPOTENCY_CONFLICT
+                                    ? t().get("tc.wallet.reverse.already.reversed", uiPlayer) : result.message);
                     rebuild();
                 }));
         button.setSize(28, 24, false);

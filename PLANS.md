@@ -10,3 +10,8 @@ Current Development test work: [docs/active/next-250926b.md](docs/active/next-25
 - Planning and documentation standards: [docs/policies/repository-policy.md](docs/policies/repository-policy.md)
 
 Every implementation plan must include objective, ownership, dependencies, risks, validation strategy, affected repositories/plugins, rollback considerations, and a markdown checkbox checklist.
+
+## Maintenance
+
+Player ledger reversal looks up the original row by transaction ID and retains the existing audit reason.
+The duplicate-reversal dialog uses the player language.

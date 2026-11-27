@@ -926,13 +926,44 @@ public class WalletDatabase {
         }
     }
 
-    public List<WalletTransaction> listLatestTransactions(int playerDbId, int limit) throws SQLException {
-        String sql = """
+    private static final String TRANSACTION_SELECT = """
                 SELECT t.id, t.player_db_id, t.delta, t.resulting_balance, t.source_plugin, t.reason, t.created_at,
                        c.identifier, c.name, c.icon, c.source_plugin AS currency_source_plugin,
                        c.registered_at, c.is_default
                 FROM wallet_transactions t
                 JOIN wallet_currencies c ON c.identifier = t.currency_identifier
+            """;
+
+    Optional<WalletTransaction> findTransaction(long transactionId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(TRANSACTION_SELECT + "WHERE t.id = ?")) {
+            statement.setLong(1, transactionId);
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next() ? Optional.of(readTransaction(result)) : Optional.empty();
+            }
+        }
+    }
+
+    private static WalletTransaction readTransaction(ResultSet result) throws SQLException {
+        WalletCurrency currency = new WalletCurrency(
+                result.getString("identifier"),
+                result.getString("name"),
+                result.getString("icon"),
+                result.getString("currency_source_plugin"),
+                result.getLong("registered_at"),
+                result.getInt("is_default") == 1);
+        return new WalletTransaction(
+                result.getLong("id"),
+                result.getInt("player_db_id"),
+                currency,
+                result.getLong("delta"),
+                result.getLong("resulting_balance"),
+                result.getString("source_plugin"),
+                result.getString("reason"),
+                result.getLong("created_at"));
+    }
+
+    public List<WalletTransaction> listLatestTransactions(int playerDbId, int limit) throws SQLException {
+        String sql = TRANSACTION_SELECT + """
                 WHERE t.player_db_id = ?
                 ORDER BY t.created_at DESC, t.id DESC
                 LIMIT ?;
@@ -943,22 +974,7 @@ public class WalletDatabase {
             statement.setInt(2, limit);
             try (ResultSet result = statement.executeQuery()) {
                 while (result.next()) {
-                    WalletCurrency currency = new WalletCurrency(
-                            result.getString("identifier"),
-                            result.getString("name"),
-                            result.getString("icon"),
-                            result.getString("currency_source_plugin"),
-                            result.getLong("registered_at"),
-                            result.getInt("is_default") == 1);
-                    transactions.add(new WalletTransaction(
-                            result.getLong("id"),
-                            result.getInt("player_db_id"),
-                            currency,
-                            result.getLong("delta"),
-                            result.getLong("resulting_balance"),
-                            result.getString("source_plugin"),
-                            result.getString("reason"),
-                            result.getLong("created_at")));
+                    transactions.add(readTransaction(result));
                 }
             }
         }
@@ -978,12 +994,7 @@ public class WalletDatabase {
 
     public List<WalletTransaction> listLatestGlobalTransactions(int limit) throws SQLException {
         boolean limited = limit > 0;
-        String sql = """
-                SELECT t.id, t.player_db_id, t.delta, t.resulting_balance, t.source_plugin, t.reason, t.created_at,
-                       c.identifier, c.name, c.icon, c.source_plugin AS currency_source_plugin,
-                       c.registered_at, c.is_default
-                FROM wallet_transactions t
-                JOIN wallet_currencies c ON c.identifier = t.currency_identifier
+        String sql = TRANSACTION_SELECT + """
                 ORDER BY t.created_at DESC, t.id DESC
                 """;
         if (limited) {
@@ -996,22 +1007,7 @@ public class WalletDatabase {
             }
             try (ResultSet result = statement.executeQuery()) {
                 while (result.next()) {
-                    WalletCurrency currency = new WalletCurrency(
-                            result.getString("identifier"),
-                            result.getString("name"),
-                            result.getString("icon"),
-                            result.getString("currency_source_plugin"),
-                            result.getLong("registered_at"),
-                            result.getInt("is_default") == 1);
-                    transactions.add(new WalletTransaction(
-                            result.getLong("id"),
-                            result.getInt("player_db_id"),
-                            currency,
-                            result.getLong("delta"),
-                            result.getLong("resulting_balance"),
-                            result.getString("source_plugin"),
-                            result.getString("reason"),
-                            result.getLong("created_at")));
+                    transactions.add(readTransaction(result));
                 }
             }
         }

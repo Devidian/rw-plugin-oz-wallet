@@ -7,6 +7,7 @@ Expose Wallet's player balance, currency and system-account APIs through the loa
 
 ## Source and tests
 
+- [Reversal tests](../../tests/de/omegazirkel/risingworld/wallet/WalletReversalTest.java) cover primary-key lookup, audit and repeat guarding.
 - [`WalletRuntime`](../../src/de/omegazirkel/risingworld/WalletRuntime.java) exposes public operations on the loaded `Wallet`, including `deposit`, `withdraw`, `balance`, `transferIdempotent`, and player/system/world transfer methods.
 - [`WalletService`](../../src/de/omegazirkel/risingworld/wallet/WalletService.java) validates requests and delegates ledger mutations. [`WalletDatabase`](../../src/de/omegazirkel/risingworld/wallet/WalletDatabase.java) owns schemas, transaction boundaries, correlation lookup, and rollback.
 - [`WorldTreasuryService`](../../src/de/omegazirkel/risingworld/wallet/WorldTreasuryService.java) resolves the world account. [`AccountTransferResult`](../../src/de/omegazirkel/risingworld/wallet/AccountTransferResult.java) is part of the caller-facing contract.

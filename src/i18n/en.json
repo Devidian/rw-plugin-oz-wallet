@@ -106,7 +106,12 @@
       },
       "back": "Back",
       "close": "Close",
-      "reverse": {"title": "Reverse transaction", "confirm": "Create a compensating transaction for #PH_TRANSACTION? The original entry remains unchanged.", "success": "Compensating transaction created."},
+      "reverse": {
+        "title": "Reverse transaction",
+        "confirm": "Create a compensating transaction for #PH_TRANSACTION? The original entry remains unchanged.",
+        "success": "Compensating transaction created.",
+        "already": {"reversed": "This transaction has already been reversed."}
+      },
       "col": {
         "account": {
           "$value": "Account",

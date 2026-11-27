@@ -4,6 +4,9 @@
 
 ## Unreleased
 
+- Player ledger reversal looks up the original row by transaction ID and retains the existing audit reason.
+- Localize the wallet dialog for an already reversed player transaction.
+
 ## [0.11.0] - 2026-09-25 | Faction accounts and world treasury
 
 - feat: separate 100,000 world start capital from configurable 25,000 annual capital.
